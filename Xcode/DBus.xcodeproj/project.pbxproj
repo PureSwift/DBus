@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		6E10BE721C7EA8B7009AF706 /* DBus.h in Headers */ = {isa = PBXBuildFile; fileRef = 6E10BE711C7EA8B7009AF706 /* DBus.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6E10BE791C7EA8B7009AF706 /* DBus.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E10BE6E1C7EA8B7009AF706 /* DBus.framework */; };
+		6E10BE8E1C7F4D82009AF706 /* Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E10BE8D1C7F4D82009AF706 /* Connection.swift */; };
+		6E10BE941C7F576F009AF706 /* libdbus-1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E10BE931C7F576F009AF706 /* libdbus-1.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,6 +29,10 @@
 		6E10BE731C7EA8B7009AF706 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6E10BE781C7EA8B7009AF706 /* DBusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DBusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E10BE7F1C7EA8B7009AF706 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		6E10BE8D1C7F4D82009AF706 /* Connection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Connection.swift; sourceTree = "<group>"; };
+		6E10BE901C7F4F01009AF706 /* dbus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = dbus; path = "../../../../../usr/local/include/dbus-1.0/dbus"; sourceTree = "<group>"; };
+		6E10BE921C7F560C009AF706 /* module.map */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.map; sourceTree = SOURCE_ROOT; };
+		6E10BE931C7F576F009AF706 /* libdbus-1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libdbus-1.dylib"; path = "../../../../../usr/local/lib/libdbus-1.dylib"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6E10BE941C7F576F009AF706 /* libdbus-1.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -51,6 +58,8 @@
 		6E10BE641C7EA8B7009AF706 = {
 			isa = PBXGroup;
 			children = (
+				6E10BE931C7F576F009AF706 /* libdbus-1.dylib */,
+				6E10BE901C7F4F01009AF706 /* dbus */,
 				6E10BE8A1C7EAD9F009AF706 /* Sources */,
 				6E10BE701C7EA8B7009AF706 /* DBus */,
 				6E10BE7C1C7EA8B7009AF706 /* DBusTests */,
@@ -71,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				6E10BE711C7EA8B7009AF706 /* DBus.h */,
+				6E10BE921C7F560C009AF706 /* module.map */,
 				6E10BE731C7EA8B7009AF706 /* Info.plist */,
 			);
 			path = DBus;
@@ -87,6 +97,7 @@
 		6E10BE8A1C7EAD9F009AF706 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				6E10BE8D1C7F4D82009AF706 /* Connection.swift */,
 			);
 			name = Sources;
 			path = ../Sources;
@@ -200,6 +211,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6E10BE8E1C7F4D82009AF706 /* Connection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -317,12 +329,17 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"/usr/local/include/dbus-1.0",
+					"/usr/local/lib/dbus-1.0/include",
+				);
 				INFOPLIST_FILE = DBus/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = org.pureswift.DBus;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = $SRCROOT;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -337,12 +354,17 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"/usr/local/include/dbus-1.0",
+					"/usr/local/lib/dbus-1.0/include",
+				);
 				INFOPLIST_FILE = DBus/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = org.pureswift.DBus;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_INCLUDE_PATHS = $SRCROOT;
 			};
 			name = Release;
 		};
