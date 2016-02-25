@@ -22,10 +22,17 @@ internal extension DBusError {
     
     typealias InternalPointer = UnsafeMutablePointer<CDBus.DBusError>
     
-    init(internalPointer: DBusError.InternalPointer) {
+    /// Creates a DBusError from its C pointer and frees the pointer.
+    init(internalPointer: DBusError.InternalPointer, freePointer: Bool = true) {
         
         assert(internalPointer != nil, "Nil error pointer")
         
+        defer { if freePointer { dbus_error_free(internalPointer) } }
         
+        self.name = String.fromCString(internalPointer.memory.name)!
+        
+        dbus_error_has_name(<#T##error: UnsafePointer<DBusError>##UnsafePointer<DBusError>#>, <#T##name: UnsafePointer<Int8>##UnsafePointer<Int8>#>)
+        
+        self.message = String.fromCString(internalPointer.memory.message)!
     }
 }
