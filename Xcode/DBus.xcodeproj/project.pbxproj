@@ -11,6 +11,7 @@
 		6E10BE791C7EA8B7009AF706 /* DBus.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E10BE6E1C7EA8B7009AF706 /* DBus.framework */; };
 		6E10BE8E1C7F4D82009AF706 /* Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E10BE8D1C7F4D82009AF706 /* Connection.swift */; };
 		6E10BE941C7F576F009AF706 /* libdbus-1.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E10BE931C7F576F009AF706 /* libdbus-1.dylib */; };
+		6E10BE961C7F5FF7009AF706 /* Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E10BE951C7F5FF7009AF706 /* Error.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +34,7 @@
 		6E10BE901C7F4F01009AF706 /* dbus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = dbus; path = "../../../../../usr/local/include/dbus-1.0/dbus"; sourceTree = "<group>"; };
 		6E10BE921C7F560C009AF706 /* module.map */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.map; sourceTree = SOURCE_ROOT; };
 		6E10BE931C7F576F009AF706 /* libdbus-1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libdbus-1.dylib"; path = "../../../../../usr/local/lib/libdbus-1.dylib"; sourceTree = "<group>"; };
+		6E10BE951C7F5FF7009AF706 /* Error.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				6E10BE8D1C7F4D82009AF706 /* Connection.swift */,
+				6E10BE951C7F5FF7009AF706 /* Error.swift */,
 			);
 			name = Sources;
 			path = ../Sources;
@@ -211,6 +214,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6E10BE961C7F5FF7009AF706 /* Error.swift in Sources */,
 				6E10BE8E1C7F4D82009AF706 /* Connection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
