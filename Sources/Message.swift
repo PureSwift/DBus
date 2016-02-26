@@ -131,10 +131,7 @@ public final class DBusMessage {
     
     // MARK: - Methods
     
-    internal func setData(data: [UInt8], slot: dbus_int32_t, freeData: DBusFreeFunction) {
-        
-        
-    }
+    
     
     // MARK: - Properties
     
@@ -147,6 +144,12 @@ public final class DBusMessage {
             else { fatalError("Invalid DBus Message type: \(rawValue)") }
         
         return type
+    }
+    
+    /// Checks whether a message contains Unix file descriptors.
+    public var containsFileDescriptors: Bool {
+        
+        return dbus_message_contains_unix_fds(internalPointer).boolValue
     }
     
     /// The serial of a message or `0` if none has been specified.
@@ -295,6 +298,11 @@ public final class DBusMessage {
         
         guard function(internalPointer, newString.0)
             else { fatalError("Out of memory! Could not set \"\(newValue ?? "<Nil String>")\" for function \(function)") }
+    }
+    
+    private func setData(data: [UInt8], slot: dbus_int32_t, freeData: DBusFreeFunction) {
+        
+        
     }
 }
 
