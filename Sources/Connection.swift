@@ -76,7 +76,7 @@ public final class DBusConnection {
         dbus_connection_flush(internalPointer)
     }
     
-    // MARK: - Accessors
+    // MARK: - Properties
     
     public var connected: Bool {
         

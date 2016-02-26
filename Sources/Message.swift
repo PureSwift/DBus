@@ -128,8 +128,9 @@ public final class DBusMessage {
         
     }
     
-    // MARK: - Accessors
+    // MARK: - Properties
     
+    /// The message type.
     public var type: DBusMessageType {
         
         let rawValue = dbus_message_get_type(internalPointer)
@@ -150,7 +151,9 @@ public final class DBusMessage {
     /// For messages you're sending, `DBusConnection.send()` will assign a serial and return it to you.
     public var serial: dbus_uint32_t {
         
-        return dbus_message_get_serial(internalPointer)
+        get { return dbus_message_get_serial(internalPointer) }
+        
+        set { dbus_message_set_serial(internalPointer, newValue) }
     }
     
     /// The reply serial of a message (the serial of the message this is a reply to).
@@ -158,7 +161,7 @@ public final class DBusMessage {
         
         get { return dbus_message_get_reply_serial(internalPointer) }
         
-        set { dbus_message_set_reply_serial(internalPointer, newValue) }
+        set { guard dbus_message_set_reply_serial(internalPointer, newValue) else { fatalError("Out of memory!") } }
     }
     
     /// Flag indicating that the caller of the method is prepared to wait for interactive authorization to take place 
@@ -184,6 +187,21 @@ public final class DBusMessage {
         get { return dbus_message_get_auto_start(internalPointer).boolValue }
         
         set { dbus_message_set_auto_start(internalPointer, dbus_bool_t(newValue)) }
+    }
+    
+    /// Flag indicating that the message does not want a reply; 
+    /// if this flag is set, the other end of the connection may (but is not required to) 
+    /// optimize by not sending method return or error replies.
+    ///
+    /// The flag is `false` by default, that is by default the other end is required to reply.
+    ///
+    /// - Note: If this flag is set, there is no way to know whether the message successfully arrived at the remote end. 
+    /// Normally you know a message was received when you receive the reply to it.
+    public var noReply: Bool {
+        
+        get { return dbus_message_get_no_reply(internalPointer).boolValue }
+        
+        set { dbus_message_set_no_reply(internalPointer, dbus_bool_t(newValue)) }
     }
     
     /// The destination is the name of another connection on the bus 
@@ -219,7 +237,18 @@ public final class DBusMessage {
         set { setValueForFunction(dbus_message_set_interface, newValue) }
     }
     
-    /// Sets the interface member being invoked (for method call type) or emitted (for signal type).
+    /// The object path this message is being sent to (for method call type)
+    /// or the one a signal is being emitted from (for signal call type).
+    ///
+    /// The path must contain only valid characters as defined in the D-Bus specification.
+    public var path: String? {
+        
+        get { return valueForFunction(dbus_message_get_path) }
+        
+        set { setValueForFunction(dbus_message_set_path, newValue) }
+    }
+    
+    /// The interface member being invoked (for method call type) or emitted (for signal type).
     ///
     /// The member name must contain only valid characters as defined in the D-Bus specification.
     public var member: String? {
@@ -227,6 +256,20 @@ public final class DBusMessage {
         get { return valueForFunction(dbus_message_get_member) }
         
         set { setValueForFunction(dbus_message_set_member, newValue) }
+    }
+    
+    /// The message sender.
+    ///
+    /// The sender must be a valid bus name as defined in the D-Bus specification.
+    ///
+    /// - Note: Usually you don't want to call this. 
+    /// The message bus daemon will call it to set the origin of each message. 
+    /// If you aren't implementing a message bus daemon you shouldn't need to set the sender.
+    public var sender: String? {
+        
+        get { return valueForFunction(dbus_message_get_sender) }
+        
+        set { setValueForFunction(dbus_message_set_sender, newValue) }
     }
     
     // MARK: - Private Methods
