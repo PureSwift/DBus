@@ -192,17 +192,9 @@ public final class DBusMessage {
     /// The destination name must contain only valid characters as defined in the D-Bus specification.
     public var destination: String? {
         
-        get { return String.fromCString(dbus_message_get_destination(internalPointer)) }
+        get { return valueForFunction(dbus_message_get_destination) }
         
-        set {
-            
-            let newString = convertString(newValue)
-            
-            defer { cleanConvertedString(newString) }
-            
-            guard dbus_message_set_destination(internalPointer, newString.0)
-                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
-        }
+        set { setValueForFunction(dbus_message_set_destination, newValue) }
     }
     
     /// The name of the error (for `Error` message type).
@@ -211,17 +203,9 @@ public final class DBusMessage {
     /// The error name must contain only valid characters as defined in the D-Bus specification.
     public var errorName: String? {
         
-        get { return String.fromCString(dbus_message_get_error_name(internalPointer)) }
+        get { return valueForFunction(dbus_message_get_error_name) }
         
-        set {
-            
-            let newString = convertString(newValue)
-            
-            defer { cleanConvertedString(newString) }
-            
-            guard dbus_message_set_error_name(internalPointer, newString.0)
-                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
-        }
+        set { setValueForFunction(dbus_message_set_error_name, newValue) }
     }
     
     /// The interface this message is being sent to (for method call type) 
@@ -230,17 +214,9 @@ public final class DBusMessage {
     /// The interface name must contain only valid characters as defined in the D-Bus specification.
     public var interface: String? {
         
-        get { return String.fromCString(dbus_message_get_interface(internalPointer)) }
+        get { return valueForFunction(dbus_message_get_interface) }
         
-        set {
-            
-            let newString = convertString(newValue)
-            
-            defer { cleanConvertedString(newString) }
-            
-            guard dbus_message_set_interface(internalPointer, newString.0)
-                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
-        }
+        set { setValueForFunction(dbus_message_set_interface, newValue) }
     }
     
     /// Sets the interface member being invoked (for method call type) or emitted (for signal type).
@@ -248,25 +224,26 @@ public final class DBusMessage {
     /// The member name must contain only valid characters as defined in the D-Bus specification.
     public var member: String? {
         
-        get { return String.fromCString(dbus_message_get_member(internalPointer)) }
+        get { return valueForFunction(dbus_message_get_member) }
         
-        set {
-            
-            let newString = convertString(newValue)
-            
-            defer { cleanConvertedString(newString) }
-            
-            guard dbus_message_set_member(internalPointer, newString.0)
-                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
-        }
+        set { setValueForFunction(dbus_message_set_member, newValue) }
     }
     
     // MARK: - Private Methods
     
-    @inline(__always) // closest thing to macro
-    private func valueForFunction(function: COpaquePointer -> ()) -> String {
+    private func valueForFunction(function: COpaquePointer -> UnsafePointer<Int8>) -> String? {
         
+        return String.fromCString(function(internalPointer))
+    }
+    
+    private func setValueForFunction(function: (COpaquePointer, UnsafePointer<Int8>) -> dbus_bool_t, _ newValue: String?) {
         
+        let newString = convertString(newValue)
+        
+        defer { cleanConvertedString(newString) }
+        
+        guard function(internalPointer, newString.0)
+            else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
     }
 }
 
