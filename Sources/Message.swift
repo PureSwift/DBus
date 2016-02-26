@@ -123,7 +123,10 @@ public final class DBusMessage {
     
     // MARK: - Methods
     
-    
+    internal func setData(data: [UInt8], slot: dbus_int32_t, freeData: DBusFreeFunction) {
+        
+        
+    }
     
     // MARK: - Accessors
     
@@ -159,6 +162,78 @@ public final class DBusMessage {
         
         set { dbus_message_set_allow_interactive_authorization(internalPointer, dbus_bool_t(newValue)) }
     }
+    
+    /// Sets a flag indicating that an owner for the destination name will be automatically started before the message is delivered.
+    ///
+    /// When this flag is set, the message is held until a name owner finishes starting up, 
+    /// or fails to start up. In case of failure, the reply will be an error.
+    ///
+    /// The flag is set to `true` by default, i.e. auto starting is the default.
+    public var autoStart: Bool {
+        
+        get { return dbus_message_get_auto_start(internalPointer).boolValue }
+        
+        set { dbus_message_set_auto_start(internalPointer, dbus_bool_t(newValue)) }
+    }
+    
+    /// The destination is the name of another connection on the bus 
+    /// and may be either the unique name assigned by the bus to each connection, or a well-known name specified in advance.
+    ///
+    /// The destination name must contain only valid characters as defined in the D-Bus specification.
+    public var destination: String? {
+        
+        get { return String.fromCString(dbus_message_get_destination(internalPointer)) }
+        
+        set {
+            
+            let newString = convertString(newValue)
+            
+            defer { cleanConvertedString(newString) }
+            
+            guard dbus_message_set_destination(internalPointer, newString.0)
+                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
+        }
+    }
+    
+    /// The name of the error (for `Error` message type).
+    ///
+    /// The name is fully-qualified (namespaced). 
+    /// The error name must contain only valid characters as defined in the D-Bus specification.
+    public var errorName: String? {
+        
+        get { return String.fromCString(dbus_message_get_error_name(internalPointer)) }
+        
+        set {
+            
+            let newString = convertString(newValue)
+            
+            defer { cleanConvertedString(newString) }
+            
+            guard dbus_message_set_error_name(internalPointer, newString.0)
+                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
+        }
+    }
+    
+    /// The interface this message is being sent to (for method call type) 
+    /// or the interface a signal is being emitted from (for signal call type).
+    ///
+    /// The interface name must contain only valid characters as defined in the D-Bus specification.
+    public var interface: String? {
+        
+        get { return String.fromCString(dbus_message_get_interface(internalPointer)) }
+        
+        set {
+            
+            let newString = convertString(newValue)
+            
+            defer { cleanConvertedString(newString) }
+            
+            guard dbus_message_set_interface(internalPointer, newString.0)
+                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
+        }
+    }
+    
+    
 }
 
 // MARK: - Copying
