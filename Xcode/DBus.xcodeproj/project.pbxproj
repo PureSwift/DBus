@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6E0F0B201C7FF4B0000B6B07 /* Boolean.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F0B1F1C7FF4B0000B6B07 /* Boolean.swift */; };
+		6E0F0B221C7FF862000B6B07 /* Type.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F0B211C7FF862000B6B07 /* Type.swift */; };
 		6E10BE721C7EA8B7009AF706 /* DBus.h in Headers */ = {isa = PBXBuildFile; fileRef = 6E10BE711C7EA8B7009AF706 /* DBus.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6E10BE791C7EA8B7009AF706 /* DBus.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E10BE6E1C7EA8B7009AF706 /* DBus.framework */; };
 		6E10BE8E1C7F4D82009AF706 /* Connection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E10BE8D1C7F4D82009AF706 /* Connection.swift */; };
@@ -25,6 +27,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		6E0F0B1F1C7FF4B0000B6B07 /* Boolean.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Boolean.swift; sourceTree = "<group>"; };
+		6E0F0B211C7FF862000B6B07 /* Type.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Type.swift; sourceTree = "<group>"; };
 		6E10BE6E1C7EA8B7009AF706 /* DBus.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DBus.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6E10BE711C7EA8B7009AF706 /* DBus.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DBus.h; sourceTree = "<group>"; };
 		6E10BE731C7EA8B7009AF706 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -101,6 +105,8 @@
 			children = (
 				6E10BE8D1C7F4D82009AF706 /* Connection.swift */,
 				6E10BE951C7F5FF7009AF706 /* Error.swift */,
+				6E0F0B1F1C7FF4B0000B6B07 /* Boolean.swift */,
+				6E0F0B211C7FF862000B6B07 /* Type.swift */,
 			);
 			name = Sources;
 			path = ../Sources;
@@ -215,7 +221,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				6E10BE961C7F5FF7009AF706 /* Error.swift in Sources */,
+				6E0F0B201C7FF4B0000B6B07 /* Boolean.swift in Sources */,
 				6E10BE8E1C7F4D82009AF706 /* Connection.swift in Sources */,
+				6E0F0B221C7FF862000B6B07 /* Type.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
