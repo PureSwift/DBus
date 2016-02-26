@@ -130,6 +130,16 @@ public final class DBusMessage {
     
     // MARK: - Accessors
     
+    public var type: DBusMessageType {
+        
+        let rawValue = dbus_message_get_type(internalPointer)
+        
+        guard let type = DBusMessageType(rawValue: rawValue)
+            else { fatalError("Invalid DBus Message type: \(rawValue)") }
+        
+        return type
+    }
+    
     /// The serial of a message or `0` if none has been specified.
     ///
     /// The message's serial number is provided by the application sending the message and
@@ -233,7 +243,31 @@ public final class DBusMessage {
         }
     }
     
+    /// Sets the interface member being invoked (for method call type) or emitted (for signal type).
+    ///
+    /// The member name must contain only valid characters as defined in the D-Bus specification.
+    public var member: String? {
+        
+        get { return String.fromCString(dbus_message_get_member(internalPointer)) }
+        
+        set {
+            
+            let newString = convertString(newValue)
+            
+            defer { cleanConvertedString(newString) }
+            
+            guard dbus_message_set_member(internalPointer, newString.0)
+                else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
+        }
+    }
     
+    // MARK: - Private Methods
+    
+    @inline(__always) // closest thing to macro
+    private func valueForFunction(function: COpaquePointer -> ()) -> String {
+        
+        
+    }
 }
 
 // MARK: - Copying
