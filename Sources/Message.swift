@@ -21,9 +21,9 @@ public final class DBusMessage {
         dbus_message_unref(internalPointer)
     }
     
-    internal init(internalPointer: COpaquePointer) {
+    internal init(_ internalPointer: COpaquePointer) {
         
-        assert(internalPointer != nil)
+        assert(internalPointer != nil, "Cannot create a DBus message from a nil pointer")
         
         self.internalPointer = internalPointer
     }
@@ -52,8 +52,6 @@ public final class DBusMessage {
         defer { cleanConvertedString(messageCString) }
         
         self.internalPointer = dbus_message_new_error(error.replyTo.internalPointer, nameCString.0, messageCString.0)
-        
-        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus error message")
     }
     
     /// Constructs a new message to invoke a method on a remote object.
@@ -77,10 +75,17 @@ public final class DBusMessage {
         
         defer { cleanConvertedString(method) }
         
-        self.internalPointer
+        // Returns NULL if memory can't be allocated for the message.
+        self.internalPointer = dbus_message_new_method_call(destination.0, path.0, interface.0, method.0)
+        
+        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus message")
     }
     
     // MARK: - Methods
+    
+    
+    
+    // MARK: - Accessors
     
     /// The serial of a message or `0` if none has been specified.
     ///
@@ -102,10 +107,6 @@ public final class DBusMessage {
         
         set { dbus_message_set_reply_serial(internalPointer, newValue) }
     }
-    
-    // MARK: - Accessors
-    
-    
 }
 
 // MARK: - Copying
@@ -114,6 +115,10 @@ public extension DBusMessage {
     
     public var copy: DBusMessage {
         
+        let copyPointer = dbus_message_copy(internalPointer)
         
+        let copyMessage = DBusMessage(copyPointer)
+        
+        return copyMessage
     }
 }
