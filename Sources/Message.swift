@@ -8,6 +8,14 @@
 
 import CDBus
 
+/// Message to be sent or received over a `DBusConnection`.
+///
+/// A `DBusMessage` is the most basic unit of communication over a `DBusConnection`.
+/// A `DBusConnection` represents a stream of messages received from a remote application,
+/// and a stream of messages sent to a remote application.
+///
+/// A message has header fields such as the sender, destination, method or signal name, and so forth.
+///
 public final class DBusMessage {
     
     // MARK: - Internal Properties
@@ -286,7 +294,7 @@ public final class DBusMessage {
         defer { cleanConvertedString(newString) }
         
         guard function(internalPointer, newString.0)
-            else { fatalError("Out of memory! Could not set \"\(newValue)\"") }
+            else { fatalError("Out of memory! Could not set \"\(newValue ?? "<Nil String>")\" for function \(function)") }
     }
 }
 
