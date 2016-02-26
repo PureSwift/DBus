@@ -9,7 +9,7 @@
 import CDBus
 
 /// Type representing a connection to a remote application and associated incoming/outgoing message queues.
-public final class Connection {
+public final class DBusConnection {
     
     // MARK: - Internal Properties
     
@@ -24,7 +24,8 @@ public final class Connection {
     
     /// Gets a connection to a remote address.
     ///
-    /// - Parameter shared: Whether the connection will be shared subsequent callers, 
+    /// - Parameter address: The address to connect to.
+    /// - Parameter shared: Whether the connection will be shared by subsequent callers,
     /// or a new dedicated connection should be created.
     public init(address: String, shared: Bool = true) throws {
         
@@ -58,6 +59,21 @@ public final class Connection {
     public func canSend(type: DBusType) -> Bool {
         
         return dbus_connection_can_send_type(internalPointer, type.integerValue).boolValue
+    }
+    
+    /// Adds a message to the outgoing message queue. 
+    ///
+    /// Does not block to write the message to the network; that happens asynchronously. 
+    /// To force the message to be written, call `flush()`.
+    public func send() {
+        
+        
+    }
+    
+    /// Blocks until the outgoing message queue is empty.
+    public func flush() {
+        
+        dbus_connection_flush(internalPointer)
     }
     
     // MARK: - Accessors
