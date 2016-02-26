@@ -10,6 +10,11 @@ import CDBus
 
 extension dbus_bool_t: BooleanType {
     
+    public init(_ boolValue: Bool) {
+        
+        self = boolValue ? 1 : 0
+    }
+    
     public var boolValue: Bool {
         
         return self != 0
