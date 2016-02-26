@@ -16,21 +16,64 @@ public struct DBusError: ErrorType {
     
     /// Error message field
     public var message: String
+    
+    public init(name: String, message: String) {
+        
+        self.name = name
+        self.message = message
+    }
 }
 
-internal extension DBusError {
+// MARK: - Internal
+
+/// Internal class for working with the C DBus error API
+internal final class DBusErrorInternal {
     
     typealias InternalPointer = UnsafeMutablePointer<CDBus.DBusError>
     
-    /// Creates a DBusError from its C pointer and frees the pointer.
-    init(internalPointer: DBusError.InternalPointer, freePointer: Bool = true) {
+    // MARK: - Internal Properties
+    
+    let internalPointer: InternalPointer
+    
+    // MARK: - Initialization
+    
+    deinit {
         
-        assert(internalPointer != nil, "Nil error pointer")
+        dbus_error_free(internalPointer)
+    }
+    
+    /// Creates New DBus Error instance.
+    init() {
         
-        defer { if freePointer { dbus_error_free(internalPointer) } }
+        let internalPointer = InternalPointer()
         
-        self.name = String.fromCString(internalPointer.memory.name)!
-                
-        self.message = String.fromCString(internalPointer.memory.message)!
+        dbus_error_init(internalPointer)
+        
+        self.internalPointer = internalPointer
+        
+        assert(self.internalPointer != nil, "Could not create error. Out of memory?")
+    }
+    
+    // MARK: - Properties
+    
+    /// Checks whether an error occurred (the error is set).
+    ///
+    /// -Returns: `true` if the error is empty or `false` if the error is set.
+    var isEmpty: Bool {
+        
+        return !dbus_error_is_set(internalPointer).boolValue
+    }
+    
+    // MARK: - DBusError Conversion
+    
+    func toError() -> DBusError? {
+        
+        guard isEmpty == false else { return nil }
+        
+        let name = String.fromCString(internalPointer.memory.name)!
+        
+        let message = String.fromCString(internalPointer.memory.message)!
+        
+        return DBusError(name: name, message: message)
     }
 }

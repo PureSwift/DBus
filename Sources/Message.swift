@@ -300,10 +300,6 @@ public final class DBusMessage {
             else { fatalError("Out of memory! Could not set \"\(newValue ?? "<Nil String>")\" for function \(function)") }
     }
     
-    private func setData(data: [UInt8], slot: dbus_int32_t, freeData: DBusFreeFunction) {
-        
-        
-    }
 }
 
 // MARK: - Copying

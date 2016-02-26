@@ -29,20 +29,20 @@ public final class DBusConnection {
     /// or a new dedicated connection should be created.
     public init(address: String, shared: Bool = true) throws {
         
-        let errorPointer = DBusError.InternalPointer()
+        let error = DBusErrorInternal()
         
         if shared {
             
-            self.internalPointer = dbus_connection_open(address, errorPointer)
+            self.internalPointer = dbus_connection_open(address, error.internalPointer)
             
         } else {
             
-            self.internalPointer = dbus_connection_open_private(address, errorPointer)
+            self.internalPointer = dbus_connection_open_private(address, error.internalPointer)
         }
         
         // check for error
         guard self.internalPointer != nil
-            else { throw DBusError(internalPointer: errorPointer) }
+            else { throw error.toError()! }
     }
     
     // MARK: - Methods
