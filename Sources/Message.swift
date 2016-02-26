@@ -21,6 +21,13 @@ public final class DBusMessage {
         dbus_message_unref(internalPointer)
     }
     
+    internal init(internalPointer: COpaquePointer) {
+        
+        assert(internalPointer != nil)
+        
+        self.internalPointer = internalPointer
+    }
+    
     /// Constructs a new message of the given message type.
     public init(type: DBusMessageType) {
         
@@ -34,9 +41,43 @@ public final class DBusMessage {
     /// If you don't want to make up an error name just use `DBUS_ERROR_FAILED`.
     ///
     /// - Parameter error: A tuple consisting of the message to reply to, the error name, and the error message.
-    public init(error: (replyTo: DBusMessage, name: String, message: String)) {
+    public init(error: (replyTo: DBusMessage, name: String, message: String?)) {
         
-        self.internalPointer = dbus_message_new_error(error.replyTo.internalPointer, error.name, error.message)
+        let nameCString = convertString(error.name)
+        
+        defer { cleanConvertedString(nameCString) }
+        
+        let messageCString = convertString(error.message)
+        
+        defer { cleanConvertedString(messageCString) }
+        
+        self.internalPointer = dbus_message_new_error(error.replyTo.internalPointer, nameCString.0, messageCString.0)
+        
+        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus error message")
+    }
+    
+    /// Constructs a new message to invoke a method on a remote object.
+    ///
+    /// - Note: Destination, path, interface, and method name can't contain any invalid characters (see the D-Bus specification).
+    public init(methodCall: (destination: String?, path: String, interface: String?, method: String)) {
+        
+        let destination = convertString(methodCall.destination)
+        
+        defer { cleanConvertedString(destination) }
+        
+        let path = convertString(methodCall.path)
+        
+        defer { cleanConvertedString(path) }
+        
+        let interface = convertString(methodCall.interface)
+        
+        defer { cleanConvertedString(interface) }
+        
+        let method = convertString(methodCall.method)
+        
+        defer { cleanConvertedString(method) }
+        
+        self.internalPointer
     }
     
     // MARK: - Methods
@@ -65,4 +106,14 @@ public final class DBusMessage {
     // MARK: - Accessors
     
     
+}
+
+// MARK: - Copying
+
+public extension DBusMessage {
+    
+    public var copy: DBusMessage {
+        
+        
+    }
 }
