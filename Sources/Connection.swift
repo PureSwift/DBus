@@ -65,9 +65,51 @@ public final class DBusConnection {
     ///
     /// Does not block to write the message to the network; that happens asynchronously. 
     /// To force the message to be written, call `flush()`.
-    public func send() {
+    ///
+    /// - Parameter message: The message to write.
+    ///
+    /// - Parameter serial: Return location for message serial, or `nil` if you don't care.
+    public func send(message: DBusMessage, serial: dbus_uint32_t? = nil) {
         
+        let serialPointer: UnsafeMutablePointer<dbus_uint32_t>
         
+        if let serial = serial {
+            
+            serialPointer = UnsafeMutablePointer<dbus_uint32_t>.alloc(1)
+            
+            serialPointer.memory = serial
+            
+            defer { serialPointer.dealloc(1) }
+            
+        } else {
+            
+            // nil pointer
+            serialPointer = UnsafeMutablePointer<dbus_uint32_t>()
+        }
+        
+        guard dbus_connection_send(internalPointer, message.internalPointer, serialPointer)
+            else { fatalError("Out of memory! Could not add message to queue. (\(message))") }
+    }
+    
+    /// Queues a message to send, as with `DBusConnection.send()`, 
+    /// but also returns reply to the message.
+    public func sendWithReply(message: DBusMessage, timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> DBusPendingCall? {
+        
+        let pendingCallDoublePointer = UnsafeMutablePointer<COpaquePointer>.alloc(1)
+        
+        // free double pointer
+        defer { pendingCallDoublePointer.dealloc(1) }
+        
+        guard dbus_connection_send_with_reply(internalPointer, message.internalPointer, pendingCallDoublePointer, CInt(timeout))
+            else { fatalError("Out of memory! Could not add message to queue. (\(message))") }
+        
+        // if the connection is disconnected or you try to send Unix file descriptors on a connection that does not support them,
+        // the DBusPendingCall will be set to NULL
+        guard pendingCallDoublePointer != nil else { return nil }
+        
+        let pendingCallInternalPointer = pendingCallDoublePointer.memory
+        
+        return DBusPendingCall(pendingCallInternalPointer)
     }
     
     /// Blocks until the outgoing message queue is empty.
@@ -78,16 +120,19 @@ public final class DBusConnection {
     
     // MARK: - Properties
     
+    /// Whether the connection is currently open.
     public var connected: Bool {
         
         return dbus_connection_get_is_connected(internalPointer).boolValue
     }
     
+    /// Whether the connection was authenticated.
     public var authenticated: Bool {
         
         return dbus_connection_get_is_authenticated(internalPointer).boolValue
     }
     
+    /// Whether the connection is not authenticated as a specific user.
     public var anonymous: Bool {
         
         return dbus_connection_get_is_anonymous(internalPointer).boolValue
