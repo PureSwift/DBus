@@ -2,3 +2,5 @@
 *.xcuserstate
 
 Xcode/DBus.xcodeproj/xcuserdata
+
+Packages/*
