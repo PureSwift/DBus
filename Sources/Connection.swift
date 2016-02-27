@@ -11,6 +11,10 @@ import CDBus
 /// Type representing a connection to a remote application and associated incoming/outgoing message queues.
 public final class DBusConnection {
     
+    // MARK: - Properties
+    
+    public let shared: Bool
+    
     // MARK: - Internal Properties
     
     internal let internalPointer: COpaquePointer
@@ -18,6 +22,14 @@ public final class DBusConnection {
     // MARK: - Initialization
     
     deinit {
+        
+        // Connections created with dbus_connection_open_private() or dbus_bus_get_private() are not kept track of 
+        /// or referenced by libdbus. The creator of these connections is responsible for calling dbus_connection_close() 
+        /// prior to releasing the last reference, if the connection is not already disconnected.
+        if shared == false {
+            
+            self.close()
+        }
         
         dbus_connection_unref(internalPointer)
     }
@@ -29,6 +41,8 @@ public final class DBusConnection {
     /// or a new dedicated connection should be created.
     public init(address: String, shared: Bool = true) throws {
         
+        self.shared = shared
+        
         let error = DBusErrorInternal()
         
         if shared {
@@ -38,6 +52,33 @@ public final class DBusConnection {
         } else {
             
             self.internalPointer = dbus_connection_open_private(address, error.internalPointer)
+        }
+        
+        // check for error
+        guard self.internalPointer != nil
+            else { throw error.toError()! }
+    }
+    
+    /// Connects to a bus daemon and registers the client with it.
+    ///
+    /// - Parameter busType: Bus type.
+    /// - Parameter shared: Whether the connection will be shared by subsequent callers,
+    /// or a new dedicated connection should be created.
+    public init(busType: DBusBusType, shared: Bool = true) throws {
+        
+        self.shared = shared
+        
+        let error = DBusErrorInternal()
+        
+        let internalBusType = CDBus.DBusBusType(rawValue: busType.rawValue)
+        
+        if shared {
+            
+            self.internalPointer = dbus_bus_get(internalBusType, error.internalPointer)
+            
+        } else {
+            
+            self.internalPointer = dbus_bus_get_private(internalBusType, error.internalPointer)
         }
         
         // check for error

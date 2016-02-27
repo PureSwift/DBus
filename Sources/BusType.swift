@@ -8,7 +8,7 @@
 
 
 /// Well-known bus types.
-public enum DBusBusType: CInt {
+public enum DBusBusType: UInt32 {
     
     /// The login session bus.
     case Session
