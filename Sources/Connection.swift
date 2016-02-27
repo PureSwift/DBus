@@ -285,6 +285,21 @@ public final class DBusConnection {
         return stringValue
     }
     
+    /// The approximate size in bytes of all messages in the outgoing message queue.
+    ///
+    /// The size is approximate in that you shouldn't use it to decide how many bytes to read off the network 
+    /// or anything of that nature, as optimizations may choose to tell small white lies to avoid performance overhead.
+    public var outgoingSize: Int {
+        
+        return dbus_connection_get_outgoing_size(internalPointer)
+    }
+    
+    /// The approximate number of file descriptors of all messages in the outgoing message queue.
+    public var outgoingFileDescriptors: Int {
+        
+        return dbus_connection_get_outgoing_unix_fds(internalPointer)
+    }
+    
     /// Specifies the maximum size message this connection is allowed to receive.
     ///
     /// Larger messages will result in disconnecting the connection.
