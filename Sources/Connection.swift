@@ -214,7 +214,36 @@ public final class DBusConnection {
         dbus_connection_flush(internalPointer)
     }
     
+    /// Returns the first-received message from the incoming message queue, removing it from the queue.
+    ///
+    /// If the queue is empty, returns `nil`.
+    public func popMessage() -> DBusMessage? {
+        
+        let messageInternalPointer = dbus_connection_pop_message(internalPointer)
+        
+        guard messageInternalPointer != nil else { return nil }
+        
+        let message = DBusMessage(messageInternalPointer)
+        
+        return message
+    }
+    
     // MARK: - Dynamic Properties
+    
+    public var firstMessage: DBusMessage? {
+        
+        let messageInternalPointer = dbus_connection_borrow_message(internalPointer)
+        
+        guard messageInternalPointer != nil else { return nil }
+        
+        /// No one can get at the message while its borrowed, so return it as quickly as possible 
+        /// and don't keep a reference to it after returning it. If you need to keep the message, make a copy of it.
+        let borrowedMessage = DBusMessage(messageInternalPointer)
+        
+        let message = borrowedMessage.copy
+        
+        return message
+    }
     
     /// Whether the connection is currently open.
     public var connected: Bool {
