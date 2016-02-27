@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		6E0C5B861C816BB300AF63E5 /* PendingCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0C5B851C816BB300AF63E5 /* PendingCall.swift */; };
 		6E0C5B881C8184D400AF63E5 /* DispatchStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0C5B871C8184D400AF63E5 /* DispatchStatus.swift */; };
+		6E0C5B8A1C820D9F00AF63E5 /* HandlerResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0C5B891C820D9F00AF63E5 /* HandlerResult.swift */; };
 		6E0F0B201C7FF4B0000B6B07 /* Boolean.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F0B1F1C7FF4B0000B6B07 /* Boolean.swift */; };
 		6E0F0B221C7FF862000B6B07 /* Type.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F0B211C7FF862000B6B07 /* Type.swift */; };
 		6E0F0B241C7FFF72000B6B07 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F0B231C7FFF72000B6B07 /* Message.swift */; };
@@ -36,6 +37,7 @@
 /* Begin PBXFileReference section */
 		6E0C5B851C816BB300AF63E5 /* PendingCall.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PendingCall.swift; sourceTree = "<group>"; };
 		6E0C5B871C8184D400AF63E5 /* DispatchStatus.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DispatchStatus.swift; sourceTree = "<group>"; };
+		6E0C5B891C820D9F00AF63E5 /* HandlerResult.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HandlerResult.swift; sourceTree = "<group>"; };
 		6E0F0B1F1C7FF4B0000B6B07 /* Boolean.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Boolean.swift; sourceTree = "<group>"; };
 		6E0F0B211C7FF862000B6B07 /* Type.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Type.swift; sourceTree = "<group>"; };
 		6E0F0B231C7FFF72000B6B07 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
@@ -119,6 +121,7 @@
 			children = (
 				6E10BE8D1C7F4D82009AF706 /* Connection.swift */,
 				6E0C5B871C8184D400AF63E5 /* DispatchStatus.swift */,
+				6E0C5B891C820D9F00AF63E5 /* HandlerResult.swift */,
 				6E0F0B231C7FFF72000B6B07 /* Message.swift */,
 				6EFED11E1C813D2B0060A2BA /* MessageArgument.swift */,
 				6E0F0B251C800675000B6B07 /* MessageType.swift */,
@@ -252,6 +255,7 @@
 				6E0F0B261C800675000B6B07 /* MessageType.swift in Sources */,
 				6E10BE8E1C7F4D82009AF706 /* Connection.swift in Sources */,
 				6E0F0B221C7FF862000B6B07 /* Type.swift in Sources */,
+				6E0C5B8A1C820D9F00AF63E5 /* HandlerResult.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
