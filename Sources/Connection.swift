@@ -203,6 +203,12 @@ public final class DBusConnection {
         
         let error = DBusErrorInternal()
         
+        var vtable = DBusObjectPathVTable()
+        
+        vtable.message_function = DBusConnectionPrivateObjectPathMessageFunction
+        
+        
+        
         guard dbus_connection_try_register_object_path(internalPointer, path, vtable, userData, error.internalPointer).boolValue
             else { throw error.toError()! }
     }
@@ -242,4 +248,13 @@ public final class DBusConnection {
     
     
 }
+
+// MARK: - Private 
+
+private func DBusConnectionPrivateObjectPathMessageFunction(connection: COpaquePointer, _ message: COpaquePointer, _ userData:UnsafeMutablePointer<Void>) -> DBusHandlerResult {
+    
+    
+}
+
+
 
