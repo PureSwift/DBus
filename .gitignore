@@ -4,3 +4,5 @@
 Xcode/DBus.xcodeproj/xcuserdata
 
 Packages/*
+
+.build
