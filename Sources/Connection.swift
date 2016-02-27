@@ -61,6 +61,17 @@ public final class DBusConnection {
         return dbus_connection_can_send_type(internalPointer, type.integerValue).boolValue
     }
     
+    /// Processes any incoming data.
+    ///
+    /// If there's incoming raw data that has not yet been parsed, it is parsed,
+    /// which may or may not result in adding messages to the incoming queue.
+    public func dispatch() -> DBusDispatchStatus {
+        
+        let rawValue = dbus_connection_dispatch(internalPointer).rawValue
+        
+        return DBusDispatchStatus(rawValue: rawValue)!
+    }
+    
     /// Adds a message to the outgoing message queue. 
     ///
     /// Does not block to write the message to the network; that happens asynchronously. 
