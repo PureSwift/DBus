@@ -131,12 +131,7 @@ public final class DBusMessage {
     
     // MARK: - Methods
     
-    public func append(argument: DBusMessageArgument) {
-        
-        
-        
-        
-    }
+    
     
     // MARK: - Properties
     
@@ -165,10 +160,7 @@ public final class DBusMessage {
             fatalError("Not implemented")
         }
         
-        set {
-            
-            
-        }
+        set { append(newValue) }
     }
     
     /// Checks whether a message contains Unix file descriptors.
@@ -331,37 +323,65 @@ public final class DBusMessage {
         
         dbus_message_iter_init_append(internalPointer, &iterator)
         
-        /// Appends a "basic" value to the message.
-        @inline(__always)
-        func appendBasic<T: Any>(value: T, _ type: DBusType) {
-            
-            var copy = value
-            
-            guard dbus_message_iter_append_basic(&iterator, DBusType.String.integerValue, &copy)
-                else { fatalError("Out of memory! could not append \(value.dynamicType): \(value)") }
-        }
-        
         for argument in arguments {
             
             switch argument {
                 
-            case let .Byte(value):      appendBasic(value, .Byte)
-            case let .Boolean(value):   appendBasic(dbus_bool_t(value), .Boolean)
-            case let .Int16(value):     appendBasic(value, .Int16)
-            case let .UInt16(value):    appendBasic(value, .UInt16)
-            case let .Int32(value):     appendBasic(value, .Int32)
-            case let .UInt32(value):    appendBasic(value, .UInt32)
-            case let .Int64(value):     appendBasic(value, .Int64)
-            case let .UInt64(value):    appendBasic(value, .UInt64)
-            case let .Double(value):    appendBasic(value, .Double)
+            case var .Byte(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.Byte.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case let .Boolean(boolean):
+                
+                var value = dbus_bool_t(boolean)
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.Boolean.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case var .Int16(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.Int16.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case var .UInt16(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.UInt16.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case var .Int32(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.Int32.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case var .UInt32(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.UInt32.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case var .Int64(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.Int64.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case var .UInt64(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.UInt64.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
+                
+            case var .Double(value):
+                
+                guard dbus_message_iter_append_basic(&iterator, DBusType.Double.integerValue, &value)
+                    else { fatalError("Out of memory! could not append \(argument)") }
                 
             case let .String(value):
                 
-                let string = convertString(value)
+                var string = convertString(value)
                 
                 defer { cleanConvertedString(string) }
                 
-                appendBasic(string.0, .String)
+                guard dbus_message_iter_append_basic(&iterator, DBusType.String.integerValue, &string.0)
+                    else { fatalError("Out of memory! could not append \(argument)") }
                 
             default: fatalError("Not implemented appending: \(argument)")
             }
@@ -387,7 +407,7 @@ public extension DBusMessage {
 
 private let DBUS_TYPE_INVALID: CInt = {
     
-    let bytes = DBUS_TYPE_INVALID_AS_STRING.utf8.map {$0 as UInt8}
+    let bytes = DBUS_TYPE_INVALID_AS_STRING.utf8.map { $0 as UInt8 }
     
     return CInt(bytes[0] + bytes[1])
 }()
