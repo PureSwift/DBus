@@ -196,6 +196,17 @@ public final class DBusConnection {
         dbus_connection_flush(internalPointer)
     }
     
+    /// Registers a handler for a given path in the object hierarchy.
+    ///
+    /// The given `vtable` handles messages sent to exactly the given path.
+    public func registerObjectPath(path: String) throws {
+        
+        let error = DBusErrorInternal()
+        
+        guard dbus_connection_try_register_object_path(internalPointer, path, vtable, userData, error.internalPointer).boolValue
+            else { throw error.toError()! }
+    }
+    
     // MARK: - Properties
     
     /// Whether the connection is currently open.
