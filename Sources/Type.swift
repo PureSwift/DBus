@@ -10,19 +10,42 @@
 public enum DBusType: String {
     
     /// Type code marking an 8-bit unsigned integer.
-    case Byte =     "y"
+    case Byte               = "y"
     
     /// Type code marking a boolean.
-    case Boolean =  "b"
+    case Boolean            = "b"
     
     /// Type code marking a 16-bit signed integer
-    case Int16 =    "n"
+    case Int16              = "n"
     
     /// Type code marking a 16-bit unsigned integer. 
-    case UInt16 =   "q"
+    case UInt16             = "q"
     
-    // TODO: Add all types
+    case Int32              = "i"
     
+    case UInt32             = "u"
+    
+    case Int64              = "x"
+    
+    case UInt64             = "t"
+    
+    case Double             = "d"
+    
+    case String             = "s"
+    
+    case ObjectPath         = "o"
+    
+    case Signature          = "g"
+    
+    case FileDescriptor     = "h"
+    
+    case Array              = "a"
+    
+    case Variant            = "v"
+    
+    case Struct             = "r"
+    
+    case DictionaryEntry    = "e"
 }
 
 internal extension DBusType {

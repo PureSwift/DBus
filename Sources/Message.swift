@@ -131,7 +131,12 @@ public final class DBusMessage {
     
     // MARK: - Methods
     
-    
+    public func append(argument: DBusMessageArgument) {
+        
+        
+        
+        
+    }
     
     // MARK: - Properties
     
@@ -144,6 +149,48 @@ public final class DBusMessage {
             else { fatalError("Invalid DBus Message type: \(rawValue)") }
         
         return type
+    }
+    
+    public var arguments: [DBusMessageArgument] {
+        
+        get {
+            
+            var iterator = DBusMessageIter()
+            
+            dbus_message_iter_init(internalPointer, &iterator)
+            
+            //while let currentType = dbus_message_iter_get_arg_type(&iterator) where current_type != DBUS_TYPE_INVALID { }
+            
+            fatalError("Not implemented")
+        }
+        
+        set {
+            
+            var iterator = DBusMessageIter()
+            
+            dbus_message_iter_init_append(internalPointer, &iterator)
+            
+            for argument in newValue {
+                
+                func appendBasic<T: Any>(value: T, _ type: DBusType) {
+                    
+                    var copy = value
+                    
+                    guard dbus_message_iter_append_basic(&iterator, DBusType.Byte.integerValue, &copy)
+                        else { fatalError("Out of memory! could not append \(argument)") }
+                }
+                
+                switch argument {
+                    
+                case let .Byte(value): appendBasic(value, .Byte)
+                case let .Boolean(value): appendBasic(dbus_bool_t(value), .Boolean)
+                case let .Int16(value): appendBasic(value, .Int16)
+                    
+                    
+                default: fatalError("Not implemented: \(argument)")
+                }
+            }
+        }
     }
     
     /// Checks whether a message contains Unix file descriptors.
@@ -315,3 +362,13 @@ public extension DBusMessage {
         return copyMessage
     }
 }
+
+// MARK: - Private
+
+private let DBUS_TYPE_INVALID: CInt = {
+    
+    let bytes = DBUS_TYPE_INVALID_AS_STRING.utf8.map {$0 as UInt8}
+    
+    return CInt(bytes[0] + bytes[1])
+}()
+
