@@ -157,7 +157,8 @@ public final class DBusMessage {
             
             var iterator = DBusMessageIter()
             
-            dbus_message_iter_init(internalPointer, &iterator)
+            guard dbus_message_iter_init(internalPointer, &iterator)
+                else { return [] }
             
             //while let currentType = dbus_message_iter_get_arg_type(&iterator) where current_type != DBUS_TYPE_INVALID { }
             
@@ -166,30 +167,7 @@ public final class DBusMessage {
         
         set {
             
-            var iterator = DBusMessageIter()
             
-            dbus_message_iter_init_append(internalPointer, &iterator)
-            
-            for argument in newValue {
-                
-                func appendBasic<T: Any>(value: T, _ type: DBusType) {
-                    
-                    var copy = value
-                    
-                    guard dbus_message_iter_append_basic(&iterator, DBusType.Byte.integerValue, &copy)
-                        else { fatalError("Out of memory! could not append \(argument)") }
-                }
-                
-                switch argument {
-                    
-                case let .Byte(value): appendBasic(value, .Byte)
-                case let .Boolean(value): appendBasic(dbus_bool_t(value), .Boolean)
-                case let .Int16(value): appendBasic(value, .Int16)
-                    
-                    
-                default: fatalError("Not implemented: \(argument)")
-                }
-            }
         }
     }
     
@@ -347,6 +325,48 @@ public final class DBusMessage {
             else { fatalError("Out of memory! Could not set \"\(newValue ?? "<Nil String>")\" for function \(function)") }
     }
     
+    private func append(arguments: [DBusMessageArgument]) {
+        
+        var iterator = DBusMessageIter()
+        
+        dbus_message_iter_init_append(internalPointer, &iterator)
+        
+        /// Appends a "basic" value to the message.
+        @inline(__always)
+        func appendBasic<T: Any>(value: T, _ type: DBusType) {
+            
+            var copy = value
+            
+            guard dbus_message_iter_append_basic(&iterator, DBusType.String.integerValue, &copy)
+                else { fatalError("Out of memory! could not append \(value.dynamicType): \(value)") }
+        }
+        
+        for argument in arguments {
+            
+            switch argument {
+                
+            case let .Byte(value):      appendBasic(value, .Byte)
+            case let .Boolean(value):   appendBasic(dbus_bool_t(value), .Boolean)
+            case let .Int16(value):     appendBasic(value, .Int16)
+            case let .UInt16(value):    appendBasic(value, .UInt16)
+            case let .Int32(value):     appendBasic(value, .Int32)
+            case let .UInt32(value):    appendBasic(value, .UInt32)
+            case let .Int64(value):     appendBasic(value, .Int64)
+            case let .UInt64(value):    appendBasic(value, .UInt64)
+            case let .Double(value):    appendBasic(value, .Double)
+                
+            case let .String(value):
+                
+                let string = convertString(value)
+                
+                defer { cleanConvertedString(string) }
+                
+                appendBasic(string.0, .String)
+                
+            default: fatalError("Not implemented appending: \(argument)")
+            }
+        }
+    }
 }
 
 // MARK: - Copying
