@@ -7,5 +7,8 @@
 //
 
 import XCTest
+import DBus
 
-
+#if os(Linux)
+    //XCTestMain()
+#endif
