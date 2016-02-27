@@ -31,7 +31,7 @@ public final class DBusMessage {
     
     internal init(_ internalPointer: COpaquePointer) {
         
-        assert(internalPointer != nil, "Cannot create a DBus message from a nil pointer")
+        assert(internalPointer != nil, "Cannot initialize DBusMessage from a nil pointer")
         
         self.internalPointer = internalPointer
     }
@@ -146,6 +146,7 @@ public final class DBusMessage {
         return type
     }
     
+    /// The message's arguments.
     public var arguments: [DBusMessageArgument] {
         
         get {
@@ -304,7 +305,12 @@ public final class DBusMessage {
     
     private func valueForFunction(function: COpaquePointer -> UnsafePointer<Int8>) -> String? {
         
-        return String.fromCString(function(internalPointer))
+        // should not be free
+        let cString = function(internalPointer)
+        
+        guard cString != nil else { return nil }
+        
+        return String.fromCString(cString)!
     }
     
     private func setValueForFunction(function: (COpaquePointer, UnsafePointer<Int8>) -> dbus_bool_t, _ newValue: String?) {
