@@ -9,6 +9,16 @@
 import CDBus
 
 /// Type representing a connection to a remote application and associated incoming/outgoing message queues.
+///
+/// Several methods use the following terms:
+///
+/// - **read** means to fill the incoming message queue by reading from the socket.
+/// - **write** means to drain the outgoing queue by writing to the socket.
+/// - **dispatch** means to drain the incoming queue by invoking application-provided message handlers.
+///
+/// The method `readWriteDispatch()` for example does all three of these things, offering a simple alternative to a main loop.
+///
+/// In an application with a main loop, the read/write/dispatch operations are usually separate.
 public final class DBusConnection {
     
     // MARK: - Properties
@@ -84,6 +94,14 @@ public final class DBusConnection {
         // check for error
         guard self.internalPointer != nil
             else { throw error.toError()! }
+    }
+    
+    // MARK: - Class Methods
+    
+    /// This method sets a global flag for whether `dbus_connection_new()` will set `SIGPIPE` behavior to `SIG_IGN`.
+    public static func setChangeSIGPIPE(change: Bool) {
+        
+        dbus_connection_set_change_sigpipe(dbus_bool_t(change))
     }
     
     // MARK: - Methods
@@ -196,24 +214,7 @@ public final class DBusConnection {
         dbus_connection_flush(internalPointer)
     }
     
-    /// Registers a handler for a given path in the object hierarchy.
-    ///
-    /// The given `vtable` handles messages sent to exactly the given path.
-    public func registerObjectPath(path: String) throws {
-        
-        let error = DBusErrorInternal()
-        
-        var vtable = DBusObjectPathVTable()
-        
-        vtable.message_function = DBusConnectionPrivateObjectPathMessageFunction
-        
-        
-        
-        guard dbus_connection_try_register_object_path(internalPointer, path, vtable, userData, error.internalPointer).boolValue
-            else { throw error.toError()! }
-    }
-    
-    // MARK: - Properties
+    // MARK: - Dynamic Properties
     
     /// Whether the connection is currently open.
     public var connected: Bool {
@@ -233,6 +234,15 @@ public final class DBusConnection {
         return dbus_connection_get_is_anonymous(internalPointer).boolValue
     }
     
+    /// Checks whether there are messages in the outgoing message queue.
+    ///
+    /// Use `DBusConnection.flush()` to block until all outgoing messages have been written to the underlying transport
+    /// (such as a socket).
+    public var hasMessages: Bool {
+        
+        return dbus_connection_has_messages_to_send(internalPointer).boolValue
+    }
+    
     /// Gets the ID of the server address we are authenticated to, if this connection is on the client side, 
     /// or `nil` if the connection is on the server side.
     public var serverIdentifier: String? {
@@ -246,15 +256,57 @@ public final class DBusConnection {
         return stringValue
     }
     
+    /// Specifies the maximum size message this connection is allowed to receive.
+    ///
+    /// Larger messages will result in disconnecting the connection.
+    public var maximumSize: Int {
+        
+        get { return dbus_connection_get_max_message_size(internalPointer) }
+        
+        set { dbus_connection_set_max_message_size(internalPointer, newValue) }
+    }
+    
+    /// Specifies the maximum number of file descriptors a message on this connection is allowed to receive.
+    ///
+    /// Messages with more file descriptors will result in disconnecting the connection.
+    public var maximumFileDescriptors: Int {
+        
+        get { return dbus_connection_get_max_message_unix_fds(internalPointer) }
+        
+        set { dbus_connection_set_max_message_unix_fds(internalPointer, newValue) }
+    }
+    
+    /// Sets the maximum total number of bytes that can be used for all messages received on this connection.
+    ///
+    /// Messages count toward the maximum until they are finalized. 
+    /// When the maximum is reached, the connection will not read more data until some messages are finalized.
+    ///
+    /// The semantics of the maximum are: if outstanding messages are already above the maximum, 
+    /// additional messages will not be read.
+    /// The semantics are not: if the next message would cause us to exceed the maximum, we don't read it. 
+    /// The reason is that we don't know the size of a message until after we read it.
+    ///
+    /// Thus, the max live messages size can actually be exceeded by up to the maximum size of a single message.
+    public var maximumRecievedSize: Int {
+        
+        get { return dbus_connection_get_max_received_size(internalPointer) }
+        
+        set { dbus_connection_set_max_received_size(internalPointer, newValue) }
+    }
+    
+    /// Sets the maximum total number of unix fds that can be used for all messages received on this connection.
+    ///
+    /// Messages count toward the maximum until they are finalized. 
+    /// When the maximum is reached, the connection will not read more data until some messages are finalized.
+    ///
+    /// The semantics are analogous to those of `maximumRecievedSize`.
+    public var maximumRecievedFileDescriptors: Int {
+        
+        get { return dbus_connection_get_max_received_unix_fds(internalPointer) }
+        
+        set { dbus_connection_set_max_received_unix_fds(internalPointer, newValue) }
+    }
     
 }
-
-// MARK: - Private 
-
-private func DBusConnectionPrivateObjectPathMessageFunction(connection: COpaquePointer, _ message: COpaquePointer, _ userData:UnsafeMutablePointer<Void>) -> DBusHandlerResult {
-    
-    
-}
-
 
 
