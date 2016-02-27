@@ -193,6 +193,8 @@ public final class DBusMessage {
         set { guard dbus_message_set_reply_serial(internalPointer, newValue) else { fatalError("Out of memory!") } }
     }
     
+    #if os(OSX)
+    
     /// Flag indicating that the caller of the method is prepared to wait for interactive authorization to take place 
     /// (for instance via Polkit) before the actual method is processed.
     ///
@@ -204,6 +206,8 @@ public final class DBusMessage {
         
         set { dbus_message_set_allow_interactive_authorization(internalPointer, dbus_bool_t(newValue)) }
     }
+    
+    #endif
     
     /// Sets a flag indicating that an owner for the destination name will be automatically started before the message is delivered.
     ///
