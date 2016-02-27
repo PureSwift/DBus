@@ -88,6 +88,43 @@ public final class DBusConnection {
     
     // MARK: - Methods
     
+    /// As long as the connection is open, this function will block until it can read or write, 
+    /// then read or write, then return `true`.
+    ///
+    /// If the connection is closed, the function returns `false`.
+    ///
+    /// - Note: Even after disconnection, messages may remain in the incoming queue that need to be processed.
+    public func readWrite(timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> Bool {
+        
+        return dbus_connection_read_write(internalPointer, CInt(timeout)).boolValue
+    }
+    
+    /// If there are messages to dispatch, this method will call `DBusConnection.dispatch()` once, and return.
+    /// If there are no messages to dispatch, this function will block until it can read or write, then read or write, then return.
+    ///
+    /// The way to think of this function is that it either makes some sort of progress, or it blocks. 
+    /// Note that, while it is blocked on I/O, it cannot be interrupted (even by other threads), 
+    /// which makes this function unsuitable for applications that do more than just react to received messages.
+    ///
+    /// - Returns: The return value indicates whether the disconnect message has been processed, 
+    /// NOT whether the connection is connected. 
+    /// This is important because even after disconnecting, you want to process any messages you received prior to the disconnect.
+    public func readWriteDispatch(timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> Bool {
+        
+        return dbus_connection_read_write_dispatch(internalPointer, CInt(timeout)).boolValue
+    }
+    
+    /// Processes any incoming data.
+    ///
+    /// If there's incoming raw data that has not yet been parsed, it is parsed,
+    /// which may or may not result in adding messages to the incoming queue.
+    public func dispatch() -> DBusDispatchStatus {
+        
+        let rawValue = dbus_connection_dispatch(internalPointer).rawValue
+        
+        return DBusDispatchStatus(rawValue: rawValue)!
+    }
+    
     /// Closes a private connection, so no further data can be sent or received.
     ///
     //// This disconnects the transport (such as a socket) underlying the connection.
@@ -100,17 +137,6 @@ public final class DBusConnection {
     public func canSend(type: DBusType) -> Bool {
         
         return dbus_connection_can_send_type(internalPointer, type.integerValue).boolValue
-    }
-    
-    /// Processes any incoming data.
-    ///
-    /// If there's incoming raw data that has not yet been parsed, it is parsed,
-    /// which may or may not result in adding messages to the incoming queue.
-    public func dispatch() -> DBusDispatchStatus {
-        
-        let rawValue = dbus_connection_dispatch(internalPointer).rawValue
-        
-        return DBusDispatchStatus(rawValue: rawValue)!
     }
     
     /// Adds a message to the outgoing message queue. 
