@@ -6,16 +6,15 @@
 //  Copyright © 2016 PureSwift. All rights reserved.
 //
 
-
-/// Well-known bus types.
+/// Well-known D-Bus bus types.
 public enum DBusBusType: UInt32 {
     
     /// The login session bus.
-    case Session
+    case session
     
     /// The systemwide bus.
-    case System
+    case system
     
     /// The bus that started us, if any.
-    case Starter
+    case starter
 }

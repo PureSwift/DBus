@@ -27,7 +27,7 @@ public final class DBusConnection {
     
     // MARK: - Internal Properties
     
-    internal let internalPointer: COpaquePointer
+    internal let internalPointer: OpaquePointer
     
     // MARK: - Initialization
     
@@ -53,7 +53,7 @@ public final class DBusConnection {
         
         self.shared = shared
         
-        let error = DBusErrorInternal()
+        let error = DBusError.Reference()
         
         if shared {
             
@@ -65,8 +65,10 @@ public final class DBusConnection {
         }
         
         // check for error
-        guard self.internalPointer != nil
-            else { throw error.toError()! }
+        if let error = DBusError(error) {
+            
+            throw error
+        }
     }
     
     /// Connects to a bus daemon and registers the client with it.
@@ -78,7 +80,7 @@ public final class DBusConnection {
         
         self.shared = shared
         
-        let error = DBusErrorInternal()
+        let error = DBusError.Reference()
         
         let internalBusType = CDBus.DBusBusType(rawValue: busType.rawValue)
         
@@ -92,8 +94,10 @@ public final class DBusConnection {
         }
         
         // check for error
-        guard self.internalPointer != nil
-            else { throw error.toError()! }
+        if let error = DBusError(error) {
+            
+            throw error
+        }
     }
     
     // MARK: - Class Methods
@@ -191,7 +195,7 @@ public final class DBusConnection {
     /// but also returns reply to the message.
     public func sendWithReply(message: DBusMessage, timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> DBusPendingCall? {
         
-        let pendingCallDoublePointer = UnsafeMutablePointer<COpaquePointer>.alloc(1)
+        let pendingCallDoublePointer = UnsafeMutablePointer<OpaquePointer>.alloc(1)
         
         // free double pointer
         defer { pendingCallDoublePointer.dealloc(1) }

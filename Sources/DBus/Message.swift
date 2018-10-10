@@ -20,7 +20,7 @@ public final class DBusMessage {
     
     // MARK: - Internal Properties
     
-    internal let internalPointer: COpaquePointer
+    internal let internalPointer: OpaquePointer
     
     // MARK: - Initialization
     
@@ -29,7 +29,7 @@ public final class DBusMessage {
         dbus_message_unref(internalPointer)
     }
     
-    internal init(_ internalPointer: COpaquePointer) {
+    internal init(_ internalPointer: OpaquePointer) {
         
         assert(internalPointer != nil, "Cannot initialize DBusMessage from a nil pointer")
         
@@ -307,7 +307,7 @@ public final class DBusMessage {
     
     // MARK: - Private Methods
     
-    private func valueForFunction(function: COpaquePointer -> UnsafePointer<Int8>) -> String? {
+    private func valueForFunction(function: OpaquePointer -> UnsafePointer<Int8>) -> String? {
         
         // should not be free
         let cString = function(internalPointer)
@@ -317,7 +317,7 @@ public final class DBusMessage {
         return String.fromCString(cString)!
     }
     
-    private func setValueForFunction(function: (COpaquePointer, UnsafePointer<Int8>) -> dbus_bool_t, _ newValue: String?) {
+    private func setValueForFunction(function: (OpaquePointer, UnsafePointer<Int8>) -> dbus_bool_t, _ newValue: String?) {
         
         let newString = convertString(newValue)
         

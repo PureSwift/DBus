@@ -21,7 +21,7 @@ let package = Package(
         .target(
             name: "DBus",
             dependencies: [
-                "CDBus"
+                //"CDBus"
             ]
         )
         ],

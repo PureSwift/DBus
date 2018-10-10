@@ -14,11 +14,11 @@ public final class DBusPendingCall {
     // MARK: - Properties
     
     /// Notification closure to be called when the reply is received or the pending call times out
-    public var notification: (DBusPendingCall -> ())?
+    public var notification: ((DBusPendingCall) -> ())?
     
     // MARK: - Internal Properties
     
-    internal let internalPointer: COpaquePointer
+    internal let internalPointer: OpaquePointer
     
     // MARK: - Private Properties
     
@@ -31,7 +31,7 @@ public final class DBusPendingCall {
         dbus_pending_call_unref(internalPointer)
     }
     
-    internal init(_ internalPointer: COpaquePointer) {
+    internal init(_ internalPointer: OpaquePointer) {
         
         assert(internalPointer != nil, "Cannot initialize DBusPendingCall from a nil pointer")
         
@@ -92,7 +92,7 @@ public final class DBusPendingCall {
 
 // MARK: - Private 
 
-private func DBusPendingCallPrivateNotifyFunction(pendingCall: COpaquePointer, _ userData: UnsafeMutablePointer<Void>) -> Void {
+private func DBusPendingCallPrivateNotifyFunction(pendingCall: OpaquePointer, _ userData: UnsafeMutablePointer<Void>) -> Void {
     
     let pointer = UnsafeMutablePointer<DBusPendingCall>(userData)
     

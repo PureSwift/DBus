@@ -8,15 +8,26 @@
 
 import CDBus
 
-extension dbus_bool_t: BooleanType {
+public extension Bool {
     
-    public init(_ boolValue: Bool) {
+    init(_ boolValue: dbus_bool_t) {
+        
+        self = boolValue != 0
+    }
+}
+
+public extension dbus_bool_t {
+    
+    init(_ boolValue: Bool) {
         
         self = boolValue ? 1 : 0
     }
+}
+
+extension dbus_bool_t: ExpressibleByBooleanLiteral {
     
-    public var boolValue: Bool {
+    public init(booleanLiteral value: Bool) {
         
-        return self != 0
+        self.init(value)
     }
 }

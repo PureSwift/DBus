@@ -9,7 +9,7 @@
 import CDBus
 
 /// DBus type representing an exception.
-public struct DBusError: ErrorType {
+public struct DBusError: Error {
     
     /// Error name field
     public var name: String
@@ -17,7 +17,8 @@ public struct DBusError: ErrorType {
     /// Error message field
     public var message: String
     
-    public init(name: String, message: String) {
+    public init(name: String,
+                message: String) {
         
         self.name = name
         self.message = message
@@ -26,54 +27,62 @@ public struct DBusError: ErrorType {
 
 // MARK: - Internal
 
-/// Internal class for working with the C DBus error API
-internal final class DBusErrorInternal {
+internal extension DBusError {
     
-    typealias InternalPointer = UnsafeMutablePointer<CDBus.DBusError>
-    
-    // MARK: - Internal Properties
-    
-    let internalPointer: InternalPointer
-    
-    // MARK: - Initialization
-    
-    deinit {
+    /// Internal class for working with the C DBus error API
+    internal final class Reference {
         
-        dbus_error_free(internalPointer)
+        typealias InternalPointer = UnsafeMutablePointer<CDBus.DBusError>
+        
+        // MARK: - Internal Properties
+        
+        let internalPointer: InternalPointer
+        
+        // MARK: - Initialization
+        
+        deinit {
+            
+            dbus_error_free(internalPointer)
+        }
+        
+        /// Creates New DBus Error instance.
+        init() {
+            
+            let internalPointer: InternalPointer! = nil
+            dbus_error_init(internalPointer)
+            
+            self.internalPointer = internalPointer
+        }
+        
+        // MARK: - Properties
+        
+        /// Checks whether an error occurred (the error is set).
+        ///
+        /// - Returns: `true` if the error is empty or `false` if the error is set.
+        var isEmpty: Bool {
+            
+            return Bool(dbus_error_is_set(internalPointer))
+        }
+        
+        var name: String {
+            
+            return String(cString: internalPointer.pointee.name)
+        }
+        
+        var message: String {
+            
+            return String(cString: internalPointer.pointee.message)
+        }
     }
+}
+
+internal extension DBusError {
     
-    /// Creates New DBus Error instance.
-    init() {
+    init?(_ reference: DBusError.Reference) {
         
-        let internalPointer = InternalPointer()
+        guard reference.isEmpty == false
+            else { return nil }
         
-        dbus_error_init(internalPointer)
-        
-        self.internalPointer = internalPointer
-        
-        assert(self.internalPointer != nil, "Could not create error. Out of memory?")
-    }
-    
-    // MARK: - Properties
-    
-    /// Checks whether an error occurred (the error is set).
-    ///
-    /// -Returns: `true` if the error is empty or `false` if the error is set.
-    var isEmpty: Bool {
-        
-        return !dbus_error_is_set(internalPointer).boolValue
-    }
-    
-    // MARK: - DBusError Conversion
-    
-    func toError() -> DBusError? {
-        
-        guard isEmpty == false else { return nil }
-        
-        let name = String.fromCString(internalPointer.memory.name)!
-        
-        let message = String.fromCString(internalPointer.memory.message)!
-        
-        return DBusError(name: name, message: message)
+        self.init(name: reference.name, message: reference.message)
     }
 }
