@@ -10,11 +10,11 @@
 public enum DBusHandlerResult: UInt32 {
     
     /// Message has had its effect - no need to run more handlers.
-    case Handled
+    case handled
     
     /// Message has not had any effect - see if other handlers want it.
-    case NotYetHandled
+    case notYetHandled
     
     /// Please try again later with more memory.
-    case NeedMemory
+    case needMemory
 }

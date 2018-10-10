@@ -118,7 +118,7 @@ public final class DBusConnection {
     /// - Note: Even after disconnection, messages may remain in the incoming queue that need to be processed.
     public func readWrite(timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> Bool {
         
-        return dbus_connection_read_write(internalPointer, CInt(timeout)).boolValue
+        return Bool(dbus_connection_read_write(internalPointer, CInt(timeout)))
     }
     
     /// If there are messages to dispatch, this method will call `DBusConnection.dispatch()` once, and return.
@@ -133,7 +133,7 @@ public final class DBusConnection {
     /// This is important because even after disconnecting, you want to process any messages you received prior to the disconnect.
     public func readWriteDispatch(timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> Bool {
         
-        return dbus_connection_read_write_dispatch(internalPointer, CInt(timeout)).boolValue
+        return Bool(dbus_connection_read_write_dispatch(internalPointer, CInt(timeout)))
     }
     
     /// Processes any incoming data.
@@ -155,10 +155,10 @@ public final class DBusConnection {
         dbus_connection_close(internalPointer)
     }
     
-    /// Tests whether a certain type can be send via the connection.
+    /// Tests whether a certain type can be sent via the connection.
     public func canSend(type: DBusType) -> Bool {
         
-        return dbus_connection_can_send_type(internalPointer, type.integerValue).boolValue
+        return Bool(dbus_connection_can_send_type(internalPointer, type.integerValue))
     }
     
     /// Adds a message to the outgoing message queue. 
@@ -167,38 +167,27 @@ public final class DBusConnection {
     /// To force the message to be written, call `flush()`.
     ///
     /// - Parameter message: The message to write.
-    ///
-    /// - Parameter serial: Return location for message serial, or `nil` if you don't care.
-    public func send(message: DBusMessage, serial: dbus_uint32_t? = nil) {
+    public func send(message: DBusMessage) throws -> dbus_uint32_t {
         
-        let serialPointer: UnsafeMutablePointer<dbus_uint32_t>
+        var serialNumber: dbus_uint32_t = 0
         
-        if let serial = serial {
-            
-            serialPointer = UnsafeMutablePointer<dbus_uint32_t>.alloc(1)
-            
-            serialPointer.memory = serial
-            
-            defer { serialPointer.dealloc(1) }
-            
-        } else {
-            
-            // nil pointer
-            serialPointer = UnsafeMutablePointer<dbus_uint32_t>()
-        }
+        guard Bool(dbus_connection_send(internalPointer, message.internalPointer, &serialNumber))
+            else { throw DBusError(name: .failed, message: "") }
         
-        guard dbus_connection_send(internalPointer, message.internalPointer, serialPointer)
-            else { fatalError("Out of memory! Could not add message to queue. (\(message))") }
+        return serialNumber
     }
     
     /// Queues a message to send, as with `DBusConnection.send()`, 
     /// but also returns reply to the message.
     public func sendWithReply(message: DBusMessage, timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> DBusPendingCall? {
         
-        let pendingCallDoublePointer = UnsafeMutablePointer<OpaquePointer>.alloc(1)
+        let pendingCallDoublePointer = UnsafeMutablePointer<OpaquePointer>.allocate(capacity: 1)
         
         // free double pointer
-        defer { pendingCallDoublePointer.dealloc(1) }
+        defer {
+            pendingCallDoublePointer.deinitialize(count: 1)
+            pendingCallDoublePointer.deallocate()
+        }
         
         guard dbus_connection_send_with_reply(internalPointer, message.internalPointer, pendingCallDoublePointer, CInt(timeout))
             else { fatalError("Out of memory! Could not add message to queue. (\(message))") }
@@ -223,9 +212,8 @@ public final class DBusConnection {
     /// If the queue is empty, returns `nil`.
     public func popMessage() -> DBusMessage? {
         
-        let messageInternalPointer = dbus_connection_pop_message(internalPointer)
-        
-        guard messageInternalPointer != nil else { return nil }
+        guard let messageInternalPointer = dbus_connection_pop_message(internalPointer)
+            else { return nil }
         
         let message = DBusMessage(messageInternalPointer)
         
@@ -236,9 +224,8 @@ public final class DBusConnection {
     
     public var firstMessage: DBusMessage? {
         
-        let messageInternalPointer = dbus_connection_borrow_message(internalPointer)
-        
-        guard messageInternalPointer != nil else { return nil }
+        guard let messageInternalPointer = dbus_connection_borrow_message(internalPointer)
+            else { return nil }
         
         /// No one can get at the message while its borrowed, so return it as quickly as possible 
         /// and don't keep a reference to it after returning it. If you need to keep the message, make a copy of it.
@@ -252,19 +239,19 @@ public final class DBusConnection {
     /// Whether the connection is currently open.
     public var connected: Bool {
         
-        return dbus_connection_get_is_connected(internalPointer).boolValue
+        return Bool(dbus_connection_get_is_connected(internalPointer))
     }
     
     /// Whether the connection was authenticated.
     public var authenticated: Bool {
         
-        return dbus_connection_get_is_authenticated(internalPointer).boolValue
+        return Bool(dbus_connection_get_is_authenticated(internalPointer))
     }
     
     /// Whether the connection is not authenticated as a specific user.
     public var anonymous: Bool {
         
-        return dbus_connection_get_is_anonymous(internalPointer).boolValue
+        return Bool(dbus_connection_get_is_anonymous(internalPointer))
     }
     
     /// Checks whether there are messages in the outgoing message queue.
@@ -273,20 +260,17 @@ public final class DBusConnection {
     /// (such as a socket).
     public var hasMessages: Bool {
         
-        return dbus_connection_has_messages_to_send(internalPointer).boolValue
+        return Bool(dbus_connection_has_messages_to_send(internalPointer))
     }
     
     /// Gets the ID of the server address we are authenticated to, if this connection is on the client side, 
     /// or `nil` if the connection is on the server side.
     public var serverIdentifier: String? {
         
-        let cString = dbus_connection_get_server_id(internalPointer)
+        guard let cString = dbus_connection_get_server_id(internalPointer)
+            else { return nil }
         
-        guard cString != nil else { return nil }
-        
-        let stringValue = String.fromCString(cString)!
-        
-        return stringValue
+        return String(cString: cString)
     }
     
     /// The approximate size in bytes of all messages in the outgoing message queue.

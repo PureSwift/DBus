@@ -10,14 +10,14 @@
 public enum DBusMessageType: CInt {
     
     /// Message type of a method call message.
-    case MethodCall = 1
+    case methodCall = 1
     
     /// Message type of a method return message.
-    case MethodReturn
+    case methodReturn
     
     /// Message type of an error reply message. 
-    case Error
+    case error
     
     /// Message type of a signal message.
-    case Signal
+    case signal
 }

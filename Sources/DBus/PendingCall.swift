@@ -14,7 +14,7 @@ public final class DBusPendingCall {
     // MARK: - Properties
     
     /// Notification closure to be called when the reply is received or the pending call times out
-    public var notification: ((DBusPendingCall) -> ())?
+    public var notification: (() -> ())?
     
     // MARK: - Internal Properties
     
@@ -33,21 +33,29 @@ public final class DBusPendingCall {
     
     internal init(_ internalPointer: OpaquePointer) {
         
-        assert(internalPointer != nil, "Cannot initialize DBusPendingCall from a nil pointer")
-        
         self.internalPointer = internalPointer
         
-        /// Set notification function
-        
-        // will be freed later
-        let pointer = UnsafeMutablePointer<DBusPendingCall>.alloc(1)
-        
-        pointer.memory = self
-        
-        dbus_pending_call_set_notify(internalPointer, DBusPendingCallPrivateNotifyFunction, UnsafeMutablePointer<Void>(pointer), DBusPendingCallPrivateFreeFunction)
+        setNotification()
     }
     
     // MARK: - Methods
+    
+    private func setNotification() {
+        
+        let objectPointer = Unmanaged<DBusPendingCall>.passRetained(self).toOpaque()
+        
+        dbus_pending_call_set_notify(internalPointer, { (internalPointer, objectPointer) in
+            
+            let object = Unmanaged<DBusPendingCall>.fromOpaque(objectPointer!).takeUnretainedValue()
+            
+            object.notification?()
+            
+        }, objectPointer, { (objectPointer) in
+            
+            // free object
+            Unmanaged<DBusPendingCall>.fromOpaque(objectPointer!).release()
+        })
+    }
     
     /// Cancels the pending call, such that any reply or error received will just be ignored.
     public func cancel() {
@@ -71,10 +79,8 @@ public final class DBusPendingCall {
         
         // attempt to get reply message
         
-        let messageInternalPointer = dbus_pending_call_steal_reply(internalPointer)
-        
-        // no response yet
-        guard messageInternalPointer != nil else { return nil }
+        guard let messageInternalPointer = dbus_pending_call_steal_reply(internalPointer)
+            else { return nil }
         
         let message = DBusMessage(messageInternalPointer)
         
@@ -86,26 +92,6 @@ public final class DBusPendingCall {
     /// Checks whether the pending call has received a reply yet, or not.
     public var completed: Bool {
         
-        return dbus_pending_call_get_completed(internalPointer).boolValue
+        return Bool(dbus_pending_call_get_completed(internalPointer))
     }
-}
-
-// MARK: - Private 
-
-private func DBusPendingCallPrivateNotifyFunction(pendingCall: OpaquePointer, _ userData: UnsafeMutablePointer<Void>) -> Void {
-    
-    let pointer = UnsafeMutablePointer<DBusPendingCall>(userData)
-    
-    let pendingCall = pointer.memory
-    
-    pendingCall.notification?(pendingCall)
-}
-
-private func DBusPendingCallPrivateFreeFunction(memory: UnsafeMutablePointer<Void>) -> Void {
-    
-    let pointer = UnsafeMutablePointer<DBusPendingCall>(memory)
-    
-    pointer.dealloc(1)
-    
-    pointer.destroy()
 }

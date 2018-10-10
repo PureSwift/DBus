@@ -12,16 +12,57 @@ import CDBus
 public struct DBusError: Error {
     
     /// Error name field
-    public var name: String
+    public var name: DBusError.Name
     
     /// Error message field
     public var message: String
     
-    public init(name: String,
+    public init(name: DBusError.Name,
                 message: String) {
         
         self.name = name
         self.message = message
+    }
+}
+
+public extension DBusError {
+    
+    public struct Name: RawRepresentable {
+        
+        public let rawValue: String
+        
+        public init(rawValue: String) {
+            
+            self.rawValue = rawValue
+        }
+    }
+}
+
+public extension DBusError.Name {
+    
+    /// A generic error; "something went wrong" - see the error message for more.
+    public static let failed: DBusError.Name = "org.freedesktop.DBus.Error.Failed"
+    
+    /// Existing file and the operation you're using does not silently overwrite.
+    public static let fileExists: DBusError.Name = "org.freedesktop.DBus.Error.FileExists"
+    
+    /// Missing file.
+    public static let fileNotFound: DBusError.Name = "org.freedesktop.DBus.Error.FileNotFound"
+}
+
+extension DBusError.Name: ExpressibleByStringLiteral {
+    
+    public init(stringLiteral value: String) {
+        
+        self.init(rawValue: value)
+    }
+}
+
+extension DBusError.Name: CustomStringConvertible {
+    
+    public var description: String {
+        
+        return rawValue
     }
 }
 
@@ -83,6 +124,7 @@ internal extension DBusError {
         guard reference.isEmpty == false
             else { return nil }
         
-        self.init(name: reference.name, message: reference.message)
+        self.init(name: DBusError.Name(rawValue: reference.name),
+                  message: reference.message)
     }
 }

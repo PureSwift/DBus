@@ -12,11 +12,11 @@
 public enum DBusDispatchStatus: UInt32 {
     
     /// There is more data to potentially convert to messages.
-    case DataRemains
+    case dataRemains
     
     /// All currently available data has been processed.
-    case Complete
+    case complete
     
     /// More memory is needed to continue.
-    case NeedMemory
+    case needMemory
 }

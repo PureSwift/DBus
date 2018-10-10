@@ -31,8 +31,6 @@ public final class DBusMessage {
     
     internal init(_ internalPointer: OpaquePointer) {
         
-        assert(internalPointer != nil, "Cannot initialize DBusMessage from a nil pointer")
-        
         self.internalPointer = internalPointer
     }
     
@@ -40,32 +38,18 @@ public final class DBusMessage {
     public init(type: DBusMessageType) {
         
         self.internalPointer = dbus_message_new(type.rawValue)
-        
-        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus message")
     }
     
     /// Creates a new message that is an error reply to another message.
     ///
     /// Error replies are most common in response to method calls, but can be returned in reply to any message.
     /// The error name must be a valid error name according to the syntax given in the D-Bus specification. 
-    /// If you don't want to make up an error name just use `DBUS_ERROR_FAILED`.
+    /// If you don't want to make up an error name just use `org.freedesktop.DBus.Error.Failed`.
     ///
     /// - Parameter error: A tuple consisting of the message to reply to, the error name, and the error message.
     public init(error: (replyTo: DBusMessage, name: String, message: String?)) {
         
-        assert(error.replyTo.internalPointer != nil, "Invalid replyTo message. Internal pointer is nil")
-        
-        let nameCString = convertString(error.name)
-        
-        defer { cleanConvertedString(nameCString) }
-        
-        let messageCString = convertString(error.message)
-        
-        defer { cleanConvertedString(messageCString) }
-        
         self.internalPointer = dbus_message_new_error(error.replyTo.internalPointer, nameCString.0, messageCString.0)
-        
-        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus message")
     }
     
     /// Constructs a new message to invoke a method on a remote object.
@@ -73,36 +57,16 @@ public final class DBusMessage {
     /// - Note: Destination, path, interface, and method name can't contain any invalid characters (see the D-Bus specification).
     public init(methodCall: (destination: String?, path: String, interface: String?, method: String)) {
         
-        let destination = convertString(methodCall.destination)
-        
-        defer { cleanConvertedString(destination) }
-        
-        let path = convertString(methodCall.path)
-        
-        defer { cleanConvertedString(path) }
-        
-        let interface = convertString(methodCall.interface)
-        
-        defer { cleanConvertedString(interface) }
-        
-        let method = convertString(methodCall.method)
-        
-        defer { cleanConvertedString(method) }
-        
         // Returns NULL if memory can't be allocated for the message.
         self.internalPointer = dbus_message_new_method_call(destination.0, path.0, interface.0, method.0)
-        
-        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus message")
     }
     
     /// Constructs a message that is a reply to a method call.
     public init(methodReturn methodCall: DBusMessage) {
         
-        assert(methodCall.internalPointer != nil, "Invalid method call message. Internal pointer is nil")
-        
         self.internalPointer = dbus_message_new_method_return(methodCall.internalPointer)
         
-        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus message")
+        
     }
     
     /// Constructs a new message representing a signal emission.
@@ -386,10 +350,6 @@ public final class DBusMessage {
                 
             case let .String(value):
                 
-                var string = convertString(value)
-                
-                defer { cleanConvertedString(string) }
-                
                 guard dbus_message_iter_append_basic(&iterator, DBusType.String.integerValue, &string.0)
                     else { fatalError("Out of memory! could not append \(argument)") }
                 
@@ -405,7 +365,8 @@ public extension DBusMessage {
     
     public var copy: DBusMessage {
         
-        let copyPointer = dbus_message_copy(internalPointer)
+        guard let copyPointer = dbus_message_copy(internalPointer)
+            else { fatalError("Could not copy message") }
         
         let copyMessage = DBusMessage(copyPointer)
         
