@@ -102,7 +102,7 @@ internal extension DBusError {
         /// - Returns: `true` if the error is empty or `false` if the error is set.
         var isEmpty: Bool {
             
-            return Bool(dbus_error_is_set(internalPointer))
+            return Bool(dbus_error_is_set(internalPointer)) == false
         }
         
         var name: String {
