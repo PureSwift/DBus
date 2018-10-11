@@ -47,26 +47,27 @@ public final class DBusMessage {
     /// If you don't want to make up an error name just use `org.freedesktop.DBus.Error.Failed`.
     ///
     /// - Parameter error: A tuple consisting of the message to reply to, the error name, and the error message.
-    public init(error: (replyTo: DBusMessage, name: String, message: String?)) {
+    public init(error: Error) {
         
-        self.internalPointer = dbus_message_new_error(error.replyTo.internalPointer, nameCString.0, messageCString.0)
+        self.internalPointer = dbus_message_new_error(error.replyTo.internalPointer, error.name, error.message)
     }
     
     /// Constructs a new message to invoke a method on a remote object.
     ///
     /// - Note: Destination, path, interface, and method name can't contain any invalid characters (see the D-Bus specification).
-    public init(methodCall: (destination: String?, path: String, interface: String?, method: String)) {
+    public init(methodCall: MethodCall) {
         
         // Returns NULL if memory can't be allocated for the message.
-        self.internalPointer = dbus_message_new_method_call(destination.0, path.0, interface.0, method.0)
+        self.internalPointer = dbus_message_new_method_call(methodCall.destination,
+                                                            methodCall.path,
+                                                            methodCall.interface,
+                                                            methodCall.method)
     }
     
     /// Constructs a message that is a reply to a method call.
     public init(methodReturn methodCall: DBusMessage) {
         
         self.internalPointer = dbus_message_new_method_return(methodCall.internalPointer)
-        
-        
     }
     
     /// Constructs a new message representing a signal emission.
@@ -74,23 +75,9 @@ public final class DBusMessage {
     /// A signal is identified by its originating object path, interface, and the name of the signal.
     ///
     /// - Note: Path, interface, and signal name must all be valid (the D-Bus specification defines the syntax of these fields).
-    public init(signal: (path: String, interface: String, name: String)) {
+    public init(signal: Signal) {
         
-        let path = convertString(signal.path)
-        
-        defer { cleanConvertedString(path) }
-        
-        let interface = convertString(signal.interface)
-        
-        defer { cleanConvertedString(interface) }
-        
-        let name = convertString(signal.name)
-        
-        defer { cleanConvertedString(name) }
-        
-        self.internalPointer = dbus_message_new_signal(path.0, interface.0, name.0)
-        
-        assert(self.internalPointer != nil, "Out of memory! Cound not create DBus message")
+        self.internalPointer = dbus_message_new_signal(signal.path, signal.interface, signal.name)
     }
     
     // MARK: - Methods
@@ -374,12 +361,37 @@ public extension DBusMessage {
     }
 }
 
-// MARK: - Private
+// MARK: - Supporting Types
 
-private let DBUS_TYPE_INVALID: CInt = {
+public extension DBusMessage {
     
-    let bytes = DBUS_TYPE_INVALID_AS_STRING.utf8.map { $0 as UInt8 }
+    public struct Error {
+        
+        public let replyTo: DBusMessage
+        public let name: String
+        public let message: String
+    }
+}
+
+public extension DBusMessage {
     
-    return CInt(bytes[0] + bytes[1])
-}()
+    public struct MethodCall {
+        
+        public let destination: String?
+        public let path: String
+        public let interface: String?
+        public let method: String
+    }
+}
+
+public extension DBusMessage {
+    
+    /// A signal is identified by its originating object path, interface, and the name of the signal.
+    public struct Signal {
+        
+        public let path: String
+        public let interface: String
+        public let name: String
+    }
+}
 

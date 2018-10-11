@@ -20,7 +20,9 @@ public struct Timeout: RawRepresentable {
 
 public extension Timeout {
     
-    public static let `default`: Timeout = Timeout(rawValue: DBUS_TIMEOUT_USE_DEFAULT)
+    public static let `default`: Timeout = -1 //Timeout(rawValue: DBUS_TIMEOUT_USE_DEFAULT)
+    
+    public static let infinite: Timeout = Timeout(rawValue: .max) //Timeout(rawValue: DBUS_TIMEOUT_INFINITE)
 }
 
 extension Timeout: ExpressibleByIntegerLiteral {

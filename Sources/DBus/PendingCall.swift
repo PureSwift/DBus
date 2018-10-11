@@ -43,7 +43,7 @@ public final class DBusPendingCall {
     private func setNotification() {
         
         let objectPointer = Unmanaged<DBusPendingCall>.passRetained(self).toOpaque()
-        
+                
         dbus_pending_call_set_notify(internalPointer, { (internalPointer, objectPointer) in
             
             let object = Unmanaged<DBusPendingCall>.fromOpaque(objectPointer!).takeUnretainedValue()

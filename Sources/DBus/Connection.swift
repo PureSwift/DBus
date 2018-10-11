@@ -179,9 +179,9 @@ public final class DBusConnection {
     
     /// Queues a message to send, as with `DBusConnection.send()`, 
     /// but also returns reply to the message.
-    public func sendWithReply(message: DBusMessage, timeout: Int = Int(DBUS_TIMEOUT_USE_DEFAULT)) -> DBusPendingCall? {
+    public func sendWithReply(message: DBusMessage, timeout: Timeout = .default) throws -> DBusPendingCall? {
         
-        let pendingCallDoublePointer = UnsafeMutablePointer<OpaquePointer>.allocate(capacity: 1)
+        let pendingCallDoublePointer = UnsafeMutablePointer<OpaquePointer?>.allocate(capacity: 1)
         
         // free double pointer
         defer {
@@ -189,16 +189,15 @@ public final class DBusConnection {
             pendingCallDoublePointer.deallocate()
         }
         
-        guard dbus_connection_send_with_reply(internalPointer, message.internalPointer, pendingCallDoublePointer, CInt(timeout))
-            else { fatalError("Out of memory! Could not add message to queue. (\(message))") }
+        guard Bool(dbus_connection_send_with_reply(internalPointer, message.internalPointer, pendingCallDoublePointer, timeout.rawValue))
+            else { throw DBusError(name: .failed, message: "No memory") }
         
         // if the connection is disconnected or you try to send Unix file descriptors on a connection that does not support them,
         // the DBusPendingCall will be set to NULL
-        guard pendingCallDoublePointer != nil else { return nil }
+        guard let pendingCallPointer = pendingCallDoublePointer.pointee
+            else { return nil }
         
-        let pendingCallInternalPointer = pendingCallDoublePointer.memory
-        
-        return DBusPendingCall(pendingCallInternalPointer)
+        return DBusPendingCall(pendingCallPointer)
     }
     
     /// Blocks until the outgoing message queue is empty.
