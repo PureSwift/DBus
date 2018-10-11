@@ -98,6 +98,7 @@ public final class DBusMessage {
     }
     
     /// The message's arguments.
+    /*
     public var arguments: [DBusMessageArgument] {
         
         get {
@@ -113,12 +114,12 @@ public final class DBusMessage {
         }
         
         set { append(newValue) }
-    }
+    }*/
     
     /// Checks whether a message contains Unix file descriptors.
     public var containsFileDescriptors: Bool {
         
-        return dbus_message_contains_unix_fds(internalPointer).boolValue
+        return Bool(dbus_message_contains_unix_fds(internalPointer))
     }
     
     /// The serial of a message or `0` if none has been specified.
@@ -141,10 +142,12 @@ public final class DBusMessage {
         
         get { return dbus_message_get_reply_serial(internalPointer) }
         
-        set { guard dbus_message_set_reply_serial(internalPointer, newValue) else { fatalError("Out of memory!") } }
+        set {
+            
+            guard Bool(dbus_message_set_reply_serial(internalPointer, newValue))
+                else { fatalError("Out of memory!") }
+        }
     }
-    
-    #if os(OSX)
     
     /// Flag indicating that the caller of the method is prepared to wait for interactive authorization to take place 
     /// (for instance via Polkit) before the actual method is processed.
@@ -153,12 +156,10 @@ public final class DBusMessage {
     /// that is, by default the other end is expected to make any authorization decisions non-interactively and promptly.
     public var allowInteractiveAuthorization: Bool {
         
-        get { return dbus_message_get_allow_interactive_authorization(internalPointer).boolValue }
+        get { return Bool(dbus_message_get_allow_interactive_authorization(internalPointer)) }
         
         set { dbus_message_set_allow_interactive_authorization(internalPointer, dbus_bool_t(newValue)) }
     }
-    
-    #endif
     
     /// Sets a flag indicating that an owner for the destination name will be automatically started before the message is delivered.
     ///
@@ -168,7 +169,7 @@ public final class DBusMessage {
     /// The flag is set to `true` by default, i.e. auto starting is the default.
     public var autoStart: Bool {
         
-        get { return dbus_message_get_auto_start(internalPointer).boolValue }
+        get { return Bool(dbus_message_get_auto_start(internalPointer)) }
         
         set { dbus_message_set_auto_start(internalPointer, dbus_bool_t(newValue)) }
     }
@@ -183,7 +184,7 @@ public final class DBusMessage {
     /// Normally you know a message was received when you receive the reply to it.
     public var noReply: Bool {
         
-        get { return dbus_message_get_no_reply(internalPointer).boolValue }
+        get { return Bool(dbus_message_get_no_reply(internalPointer)) }
         
         set { dbus_message_set_no_reply(internalPointer, dbus_bool_t(newValue)) }
     }
@@ -194,9 +195,9 @@ public final class DBusMessage {
     /// The destination name must contain only valid characters as defined in the D-Bus specification.
     public var destination: String? {
         
-        get { return valueForFunction(dbus_message_get_destination) }
+        get { return getString(dbus_message_get_destination) }
         
-        set { setValueForFunction(dbus_message_set_destination, newValue) }
+        set { setString(dbus_message_set_destination, newValue) }
     }
     
     /// The name of the error (for `Error` message type).
@@ -205,9 +206,9 @@ public final class DBusMessage {
     /// The error name must contain only valid characters as defined in the D-Bus specification.
     public var errorName: String? {
         
-        get { return valueForFunction(dbus_message_get_error_name) }
+        get { return getString(dbus_message_get_error_name) }
         
-        set { setValueForFunction(dbus_message_set_error_name, newValue) }
+        set { setString(dbus_message_set_error_name, newValue) }
     }
     
     /// The interface this message is being sent to (for method call type) 
@@ -216,9 +217,9 @@ public final class DBusMessage {
     /// The interface name must contain only valid characters as defined in the D-Bus specification.
     public var interface: String? {
         
-        get { return valueForFunction(dbus_message_get_interface) }
+        get { return getString(dbus_message_get_interface) }
         
-        set { setValueForFunction(dbus_message_set_interface, newValue) }
+        set { setString(dbus_message_set_interface, newValue) }
     }
     
     /// The object path this message is being sent to (for method call type)
@@ -227,9 +228,9 @@ public final class DBusMessage {
     /// The path must contain only valid characters as defined in the D-Bus specification.
     public var path: String? {
         
-        get { return valueForFunction(dbus_message_get_path) }
+        get { return getString(dbus_message_get_path) }
         
-        set { setValueForFunction(dbus_message_set_path, newValue) }
+        set { setString(dbus_message_set_path, newValue) }
     }
     
     /// The interface member being invoked (for method call type) or emitted (for signal type).
@@ -237,9 +238,9 @@ public final class DBusMessage {
     /// The member name must contain only valid characters as defined in the D-Bus specification.
     public var member: String? {
         
-        get { return valueForFunction(dbus_message_get_member) }
+        get { return getString(dbus_message_get_member) }
         
-        set { setValueForFunction(dbus_message_set_member, newValue) }
+        set { setString(dbus_message_set_member, newValue) }
     }
     
     /// The message sender.
@@ -251,33 +252,37 @@ public final class DBusMessage {
     /// If you aren't implementing a message bus daemon you shouldn't need to set the sender.
     public var sender: String? {
         
-        get { return valueForFunction(dbus_message_get_sender) }
+        get { return getString(dbus_message_get_sender) }
         
-        set { setValueForFunction(dbus_message_set_sender, newValue) }
+        set { setString(dbus_message_set_sender, newValue) }
     }
     
     // MARK: - Private Methods
     
-    private func valueForFunction(function: OpaquePointer -> UnsafePointer<Int8>) -> String? {
+    private func getString(_ function: (OpaquePointer?) -> (UnsafePointer<Int8>?)) -> String? {
         
         // should not be free
-        let cString = function(internalPointer)
+        guard let cString = function(internalPointer)
+            else { return nil }
         
-        guard cString != nil else { return nil }
-        
-        return String.fromCString(cString)!
+        return String(cString: cString)
     }
     
-    private func setValueForFunction(function: (OpaquePointer, UnsafePointer<Int8>) -> dbus_bool_t, _ newValue: String?) {
+    private func setString(_ function: (OpaquePointer?, UnsafePointer<Int8>?) -> (dbus_bool_t), _ newValue: String?) {
         
-        let newString = convertString(newValue)
-        
-        defer { cleanConvertedString(newString) }
-        
-        guard function(internalPointer, newString.0)
-            else { fatalError("Out of memory! Could not set \"\(newValue ?? "<Nil String>")\" for function \(function)") }
+        if let newValue = newValue {
+            
+            guard Bool(newValue.withCString({ function(internalPointer, $0) }))
+                else { fatalError("Out of memory! Could not set \"\(newValue)\" for function \(function)") }
+            
+        } else {
+            
+            guard Bool(function(internalPointer, nil))
+                else { fatalError("Out of memory! Could not set <Nil String> for function \(function)") }
+        }
     }
     
+    /*
     private func append(arguments: [DBusMessageArgument]) {
         
         var iterator = DBusMessageIter()
@@ -343,7 +348,7 @@ public final class DBusMessage {
             default: fatalError("Not implemented appending: \(argument)")
             }
         }
-    }
+    }*/
 }
 
 // MARK: - Copying

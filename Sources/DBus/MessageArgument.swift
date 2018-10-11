@@ -11,22 +11,22 @@ import CDBus
 /// DBus Message argument value.
 public indirect enum DBusMessageArgument {
     
-    case Byte(UInt8)
-    case Boolean(Bool)
-    case Int16(Swift.Int16)
-    case UInt16(Swift.UInt16)
-    case Int32(Swift.Int32)
-    case UInt32(Swift.UInt32)
-    case Int64(Swift.Int64)
-    case UInt64(Swift.UInt64)
-    case Double(Swift.Double)
-    case String(Swift.String)
-    case ObjectPath(Swift.String)
-    case Signature(Swift.String)
-    case FileDescriptor(CInt)
+    case byte(UInt8)
+    case boolean(Bool)
+    case int16(Swift.Int16)
+    case uint16(Swift.UInt16)
+    case int32(Swift.Int32)
+    case uint32(Swift.UInt32)
+    case int64(Swift.Int64)
+    case uint64(Swift.UInt64)
+    case double(Swift.Double)
+    case string(Swift.String)
+    case objectPath(Swift.String)
+    case signature(Swift.String)
+    case fileDescriptor(CInt)
     
-    case Array([DBusMessageArgument])
-    case Variant(DBusMessageArgument)
+    case array([DBusMessageArgument])
+    case variant(DBusMessageArgument)
     //case Struct()
-    case DictionaryEntry
+    case dictionaryEntry
 }
