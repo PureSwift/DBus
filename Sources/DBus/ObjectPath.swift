@@ -5,6 +5,8 @@
 //  Created by Alsey Coleman Miller on 10/20/18.
 //
 
+import Foundation
+
 /// DBus Object Path
 public struct DBusObjectPath {
     
@@ -18,72 +20,7 @@ public struct DBusObjectPath {
     }
 }
 
-// MARK: - Constants
-
-internal extension DBusObjectPath {
-    
-    static let separator = "/".first!
-}
-
-// MARK: - RawRepresentable
-
-extension DBusObjectPath: RawRepresentable {
-    
-    public init?(rawValue: String) {
-        
-        guard let reference = Reference(string: rawValue)
-            else { return nil }
-        
-        self.init(reference: reference)
-    }
-    
-    public var rawValue: String {
-        
-        get { return reference.string }
-    }
-}
-
-// MARK: - CustomStringConvertible
-
-extension DBusObjectPath: CustomStringConvertible {
-    
-    public var description: String {
-        
-        return rawValue
-    }
-}
-
-// MARK: - Element
-
-public extension DBusObjectPath {
-    
-    /// An element in the object path
-    public struct Element: RawRepresentable {
-        
-        public let rawValue: String
-        
-        public init?(rawValue: String) {
-            
-            guard rawValue.isEmpty == false // No element may be the empty string.
-                else { return nil }
-        }
-    }
-}
-
-private extension DBusObjectPath.Element {
-    
-    static let length = (min: 1, max: 255)
-}
-
-extension DBusObjectPath.Element: CustomStringConvertible {
-    
-    public var description: String {
-        
-        return rawValue
-    }
-}
-
-// MARK: - Reference Backed Value Type
+// MARK: - Reference Implementation
 
 internal extension DBusObjectPath {
     
@@ -91,7 +28,7 @@ internal extension DBusObjectPath {
     final class Reference {
         
         /// initialize with the elements
-        internal init(elements: [Element]) {
+        internal init(elements: [Element] = []) {
             
             self.elements = elements
         }
@@ -148,5 +85,172 @@ internal extension DBusObjectPath {
             
             return cache
         }
+    }
+}
+
+// MARK: - Constants
+
+internal extension DBusObjectPath {
+    
+    static let separator = "/".first!
+}
+
+public extension DBusObjectPath {
+    
+    public init() {
+        
+        self.init(reference: Reference())
+    }
+    
+    /// Initialize with a sequence of elements.
+    public init(_ elements: Element...) {
+        
+        let reference = Reference(elements: elements)
+        self.init(reference: reference)
+    }
+}
+
+// MARK: - RawRepresentable
+
+extension DBusObjectPath: RawRepresentable {
+    
+    public init?(rawValue: String) {
+        
+        guard let reference = Reference(string: rawValue)
+            else { return nil }
+        
+        self.init(reference: reference)
+    }
+    
+    public var rawValue: String {
+        
+        get { return reference.string }
+    }
+}
+
+// MARK: - Equatable
+
+extension DBusObjectPath: Equatable {
+    
+    public static func == (lhs: DBusObjectPath, rhs: DBusObjectPath) -> Bool {
+        
+        // fast path for structs with same reference
+        guard lhs.reference !== rhs.reference
+            else { return true }
+        
+        // compare values
+        return lhs.reference.elements == rhs.reference.elements
+    }
+}
+
+// MARK: - Hashable
+
+extension DBusObjectPath: Hashable {
+    
+    public var hashValue: Int {
+        
+        return reference.string.hashValue
+    }
+}
+
+// MARK: - CustomStringConvertible
+
+extension DBusObjectPath: CustomStringConvertible {
+    
+    public var description: String {
+        
+        return rawValue
+    }
+}
+
+// MARK: - Collection
+
+extension DBusObjectPath: Collection {
+    
+    public typealias Index = Int
+    
+    public subscript (index: Index) -> Element {
+     
+        return reference.elements[index]
+    }
+    
+    public var count: Int {
+        return reference.elements.count
+    }
+    
+    /// The start `Index`.
+    public var startIndex: Index {
+        return 0
+    }
+    
+    /// The end `Index`.
+    ///
+    /// This is the "one-past-the-end" position, and will always be equal to the `count`.
+    public var endIndex: Index {
+        return count
+    }
+    
+    public func index(before i: Index) -> Index {
+        return i - 1
+    }
+    
+    public func index(after i: Index) -> Index {
+        return i + 1
+    }
+    
+    public func makeIterator() -> IndexingIterator<DBusObjectPath> {
+        return IndexingIterator(_elements: self)
+    }
+}
+
+// MARK: - Element
+
+public extension DBusObjectPath {
+    
+    /// An element in the object path
+    public struct Element: RawRepresentable {
+        
+        public let rawValue: String
+        
+        public init?(rawValue: String) {
+            
+            // validate string
+            guard rawValue.isEmpty == false, // No element may be an empty string.
+                rawValue.contains(DBusObjectPath.separator) == false, // Multiple '/' characters cannot occur in sequence.
+                rawValue.rangeOfCharacter(from: Element.nonASCIICharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
+                else { return nil }
+            
+            // store validated string
+            self.rawValue = rawValue
+        }
+    }
+}
+
+private extension DBusObjectPath.Element {
+    
+    static let nonASCIICharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ0123456789").inverted
+}
+
+extension DBusObjectPath.Element: Equatable {
+    
+    public static func == (lhs: DBusObjectPath.Element, rhs: DBusObjectPath.Element) -> Bool {
+        
+        return lhs.rawValue == rhs.rawValue
+    }
+}
+
+extension DBusObjectPath.Element: CustomStringConvertible {
+    
+    public var description: String {
+        
+        return rawValue
+    }
+}
+
+extension DBusObjectPath.Element: Hashable {
+    
+    public var hashValue: Int {
+        
+        return rawValue.hashValue
     }
 }

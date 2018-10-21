@@ -7,7 +7,7 @@
 //
 
 /// DBus Type (for internal usage with libdbus)
-internal enum DBusType: String {
+public enum DBusType: String {
     
     // MARK: - Fixed Length Types
     
@@ -84,7 +84,7 @@ internal enum DBusType: String {
     case dictionaryEntry    = "e"
 }
 
-extension DBusType {
+internal extension DBusType {
     
     init?(_ integerValue: Int) {
         
