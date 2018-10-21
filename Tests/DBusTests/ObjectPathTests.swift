@@ -232,12 +232,12 @@ final class ObjectPathTests: XCTestCase {
             for _ in 0 ..< 1000 {
 
                 var newObjectPath: DBusObjectPath = []
-                XCTAssertEqual(newObjectPath.rawValue, "/")
-                
+                let reference = newObjectPath.internalReference.reference
                 XCTAssertEqual(newObjectPath.rawValue, "/")
                 newObjectPath.append(DBusObjectPath.Element(rawValue: "example")!)
                 XCTAssertEqual(newObjectPath.rawValue, "/example")
                 newObjectPath.append(DBusObjectPath.Element(rawValue: "mutation")!)
+                XCTAssert(newObjectPath.internalReference.reference === reference)
                 
                 queue.async {
                     
@@ -250,20 +250,25 @@ final class ObjectPathTests: XCTestCase {
                     var mutableCopy1 = newObjectPath
                     var mutableCopy2 = newObjectPath
                     
+                    XCTAssert(mutableCopy1.internalReference.reference === reference)
+                    XCTAssert(mutableCopy2.internalReference.reference === reference)
+                    
                     queue.async {
                         
+                        XCTAssert(mutableCopy1.internalReference.reference === reference)
                         mutableCopy1.append(DBusObjectPath.Element(rawValue: "1")!)
+                        XCTAssert(mutableCopy1.internalReference.reference !== reference)
                         XCTAssertEqual(mutableCopy1.rawValue, "/example/mutation/1")
                     }
                     
                     queue.async {
                         
+                        XCTAssert(mutableCopy2.internalReference.reference === reference)
                         mutableCopy2.append(DBusObjectPath.Element(rawValue: "2")!)
+                        XCTAssert(mutableCopy2.internalReference.reference !== reference)
                         XCTAssertEqual(mutableCopy2.rawValue, "/example/mutation/2")
                     }
                 }
-                
-                //newObjectPath.append(DBusObjectPath.Element(rawValue: "mutation2")!)
             }
             
             queue.async {
