@@ -23,6 +23,12 @@ let package = Package(
             dependencies: [
                 //"CDBus"
             ]
+        ),
+        .testTarget(
+            name: "DBusTests",
+            dependencies: [
+                "DBus"
+            ]
         )
         ],
     swiftLanguageVersions: [4]
