@@ -102,10 +102,24 @@ public extension DBusObjectPath {
         self.init(reference: Reference())
     }
     
-    /// Initialize with a sequence of elements.
+    /// Initialize with an array of elements.
+    public init(_ elements: [Element]) {
+        
+        let reference = Reference(elements: elements)
+        self.init(reference: reference)
+    }
+    
+    /// Initialize with a variable argument list of elements.
     public init(_ elements: Element...) {
         
         let reference = Reference(elements: elements)
+        self.init(reference: reference)
+    }
+    
+    /// Initialize with a sequence of elements.
+    public init <S: Sequence> (_ sequence: S) where S.Element == Element {
+        
+        let reference = Reference(elements: Array(sequence))
         self.init(reference: reference)
     }
 }

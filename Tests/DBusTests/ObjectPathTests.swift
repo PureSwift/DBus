@@ -12,11 +12,11 @@ import XCTest
 final class ObjectPathTests: XCTestCase {
     
     static let allTests = [
-        (testInvalidStrings, "testInvalidStrings"),
-        (testValidStrings, "testValidStrings")
+        (testInvalid, "testInvalid"),
+        (testValid, "testValid")
     ]
     
-    func testInvalidStrings() {
+    func testInvalid() {
         
         let strings = [
             "",
@@ -30,7 +30,7 @@ final class ObjectPathTests: XCTestCase {
         //strings.forEach { XCTAssertNil(DBusObjectPath(rawValue: $0)) }
     }
     
-    func testValidStrings() {
+    func testValid() {
         
         let values: [(String, [String])] = [
             ("/", []),
@@ -46,6 +46,7 @@ final class ObjectPathTests: XCTestCase {
             // test underlying values
             XCTAssertEqual(objectPath.reference.elements.map { $0.rawValue }, elements, "Invalid elements")
             XCTAssertEqual(objectPath.rawValue, string)
+            XCTAssertEqual(objectPath.description, string)
             
             // test collection / subscripting
             XCTAssertEqual(objectPath.count, elements.count)
@@ -53,7 +54,24 @@ final class ObjectPathTests: XCTestCase {
             elements.enumerated().forEach { XCTAssertEqual(objectPath[$0.offset].rawValue, $0.element) }
             
             // initialize with elements
-            //let elementsObjectPath = DBusObjectPath(elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
+            let elementsObjectPath = DBusObjectPath(elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
+            XCTAssertEqual(elementsObjectPath.map { $0.rawValue }, elements)
+            XCTAssertEqual(elementsObjectPath.reference.elements, elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
+            XCTAssertEqual(Array(elementsObjectPath), elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
+            
+            // test lazy string
+            XCTAssertEqual(elementsObjectPath.reference.string, string)
+            XCTAssertEqual(elementsObjectPath.rawValue, string)
+            
+            // test equality
+            XCTAssertEqual(objectPath, objectPath)
+            XCTAssertEqual(elementsObjectPath, elementsObjectPath)
+            XCTAssertEqual(objectPath, elementsObjectPath)
+            XCTAssert(objectPath.reference !== elementsObjectPath.reference)
+            XCTAssertEqual(objectPath.reference.elements, elementsObjectPath.reference.elements)
+            XCTAssertEqual(objectPath.reference.string, elementsObjectPath.reference.string)
+            XCTAssertEqual(objectPath.rawValue, elementsObjectPath.rawValue)
+            XCTAssertEqual(Array(objectPath), Array(elementsObjectPath))
         }
     }
 }
