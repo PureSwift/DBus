@@ -54,13 +54,19 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
     @_versioned
     internal var _reference: Box
     
+    /// The reference is already retained externally (e.g. C manual reference count, singleton instance)
+    /// and should be copied on first mutation regardless of Swift ARC uniqueness.
+    private(set) var externalRetain: Bool
+    
     /// Constructs the copy-on-write wrapper around the given reference.
     ///
     /// - Parameters:
     ///   - reference: The object that is to be given value semantics
+    ///   - externalRetain: Whether the object should be copied on next mutation regardless of Swift ARC uniqueness.
     @inline(__always)
-    init(_ reference: Reference) {
+    init(_ reference: Reference, externalRetain: Bool = false) {
         self._reference = Box(reference)
+        self.externalRetain = externalRetain
     }
     
     /// Returns the reference meant for read-only operations.
@@ -84,6 +90,7 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
                 // make copy of underlying reference object (not box used for ARC)
                 let copy = _reference.unbox.copy
                 _reference = Box(copy)
+                externalRetain = false // reset, because new unique instance
             }
             
             return _reference.unbox
@@ -94,7 +101,7 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
     internal var isUniquelyReferenced: Bool {
         @inline(__always)
         mutating get {
-            return isKnownUniquelyReferenced(&_reference) // check ARC reference count of box
+            return isKnownUniquelyReferenced(&_reference) && externalRetain == false // check ARC reference count of box object
         }
     }
 }

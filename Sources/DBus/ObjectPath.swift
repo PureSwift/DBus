@@ -87,6 +87,9 @@ extension DBusObjectPath: ReferenceConvertible {
         /// Cached String value.
         private var stringCache = Atomic<String?>()
         
+        /// Counter for lazy string rebuilds
+        internal var lazyStringBuild = 0
+        
         @inline(__always)
         private func resetStringCache() {
             
@@ -124,6 +127,9 @@ extension DBusObjectPath: ReferenceConvertible {
                 // cache value
                 stringCache.write(stringValue)
                 
+                // increment counter
+                lazyStringBuild += 1
+                
                 return stringValue
             }
             
@@ -153,7 +159,9 @@ public extension DBusObjectPath {
     
     public init() {
         
-        self.init(Reference.default) // all new empty paths should point to same underlying object
+        // all new empty paths should point to same underlying object
+        // and copy upon the first mutation regardless of ARC (due to being a singleton)
+        self.init(CopyOnWrite<Reference>(.default, externalRetain: true))
     }
     
     /// Initialize with an array of elements.
