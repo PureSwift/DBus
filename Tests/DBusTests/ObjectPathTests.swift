@@ -163,9 +163,20 @@ final class ObjectPathTests: XCTestCase {
         // copy should not be unique, mutations should not copy
         copy1.append(DBusObjectPath.Element(rawValue: "mutation2")!)
         XCTAssertEqual(copy1, objectPath)
+        XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 1)
         XCTAssertEqual(copy1.rawValue, objectPath.rawValue)
+        XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 2)
         XCTAssert(copy1.internalReference.reference === originalReference, "Should use same reference (mutated unique)")
         XCTAssert(objectPath.internalReference.reference !== copy1.internalReference.reference, "Should not use same reference")
+        
+        // reset string again
+        copy1.append(DBusObjectPath.Element(rawValue: "mutation3")!)
+        XCTAssertNotEqual(copy1, objectPath)
+        XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 2)
+        XCTAssertNotEqual(copy1.rawValue, objectPath.rawValue)
+        XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 3)
+        XCTAssertNotEqual(copy1.rawValue, objectPath.rawValue)
+        XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 3)
     }
     
     func testMultithread() {
@@ -236,5 +247,6 @@ final class ObjectPathTests: XCTestCase {
         XCTAssertEqual(objectPath.rawValue, string)
         XCTAssert(objectPath.internalReference.reference === originalReference)
         XCTAssert(originalReference.isStringCached)
+        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 1, "Original instance should not be mutated")
     }
 }
