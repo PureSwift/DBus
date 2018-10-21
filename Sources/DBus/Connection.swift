@@ -158,7 +158,7 @@ public final class DBusConnection {
     /// Tests whether a certain type can be sent via the connection.
     public func canSend(type: DBusType) -> Bool {
         
-        return Bool(dbus_connection_can_send_type(internalPointer, type.integerValue))
+        return Bool(dbus_connection_can_send_type(internalPointer, Int32(type.integerValue)))
     }
     
     /// Adds a message to the outgoing message queue. 

@@ -82,7 +82,10 @@ public final class DBusMessage {
     
     // MARK: - Methods
     
-    
+    public func append(_ argument: DBusMessageArgument) throws {
+        
+        
+    }
     
     // MARK: - Properties
     
@@ -114,7 +117,10 @@ public final class DBusMessage {
         }
         
         set { append(newValue) }
-    }*/
+    }
+    */
+    
+    
     
     /// Checks whether a message contains Unix file descriptors.
     public var containsFileDescriptors: Bool {
