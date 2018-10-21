@@ -75,9 +75,7 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
     /// Returns the reference meant for read-only operations.
     var reference: Reference {
         @inline(__always)
-        get {
-            return _reference.unbox
-        }
+        get { return _reference.unbox }
     }
     
     /// Returns the reference meant for mutable operations.

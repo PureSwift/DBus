@@ -33,7 +33,7 @@ extension DBusObjectPath: ReferenceConvertible {
         private init(elements: [Element], string: String?) {
             
             self.elements = elements
-            self.stringCache = Atomic(string)
+            self.stringCache = string
         }
         
         internal convenience init(elements: [Element] = []) {
@@ -70,78 +70,97 @@ extension DBusObjectPath: ReferenceConvertible {
         }
         
         /// Parsed elements. Always initialized to this value.
-        @_versioned
-        internal private(set) var elements: [Element]
+        private var elements: [Element]
+        
+        private let queue = DispatchQueue(label: "DBusObjectPath Storage Queue", qos: .default, attributes: [.concurrent])
         
         internal fileprivate(set) subscript (index: Int) -> Element {
             
             @inline(__always)
-            get { return elements[index] }
+            get { return queue.sync { [unowned self] in self.elements[index] } }
             
             @inline(__always)
             set {
                 
-                // set new value
-                elements[index] = newValue
-                
-                // reset cache
-                resetStringCache()
+                queue.sync(flags: [.barrier]) { [unowned self] in
+                    
+                    // set new value
+                    self.elements[index] = newValue
+                    
+                    // reset cache
+                    self.resetStringCache()
+                }
             }
         }
         
         /// Cached String value.
-        private let stringCache: Atomic<String?>
+        private var stringCache: String?
         
         /// Counter for lazy string rebuilds
-        internal let lazyStringBuild = Atomic<UInt>(0)
+        internal var lazyStringBuild: UInt = 0
         
         /// Resets and clears the string cache.
         ///
-        /// - Note: This should only be neccesary for unique references that are reused upon mutation. 
+        /// - Note: This should only be neccesary for unique references that are reused upon mutation.
+        ///
+        /// - Precondition: Only call from access queue blocks.
         @inline(__always)
         private func resetStringCache() {
             
-            self.stringCache.clear()
+            self.stringCache = nil
         }
         
         /// Whether the string value is internally cached
         internal var isStringCached: Bool {
             
-            return stringCache.read() != nil
+            return queue.sync { [unowned self] in self.stringCache != nil }
         }
         
         internal var copy: Reference {
             
-            // initialize new instance with underlying elements
-            let copy = Reference(elements: elements)
-            
-            // dont copy cached string, because the object is mostly likely going to be mutated
-            //copy.stringCache = stringCache
-            assert(copy.isStringCached == false)
-            
-            return copy
+            return queue.sync { [unowned self] in Reference(elements: self.elements) }
         }
         
-        /// lazily initialized string value
+        /// lazily initialize string value
         internal var string: String {
             
-            guard let cache = stringCache.read() else {
+            guard let cache = queue.sync(execute: { [unowned self] in self.stringCache }) else {
                 
-                // lazily initialize
-                let separator = String(DBusObjectPath.separator)
-                let stringValue = elements.isEmpty ? separator :
-                    elements.reduce("", { $0 + separator + $1.rawValue })
-                
-                // cache value
-                stringCache.write(stringValue)
-                
-                // increment counter
-                lazyStringBuild.write(lazyStringBuild.read() + 1)
-                
-                return stringValue
+                return queue.sync(flags: [.barrier]) { [unowned self] in
+                    
+                    // lazily initialize
+                    let separator = String(DBusObjectPath.separator)
+                    let stringValue = self.elements.isEmpty ? separator : self.elements.reduce("", { $0 + separator + $1.rawValue })
+                    
+                    // cache value
+                    self.stringCache = stringValue
+                    
+                    // increment counter
+                    self.lazyStringBuild += 1
+                    
+                    return stringValue
+                }
             }
             
             return cache
+        }
+        
+        internal var count: Int {
+            
+            return queue.sync { [unowned self] in self.elements.count }
+        }
+        
+        /// Compare equality and identity
+        internal func isEqual(to other: Reference) -> Bool {
+            
+            // fast path for same instance
+            guard self !== other else { return true }
+            
+            // compare values
+            let lhsElements = self.queue.sync { [unowned self] in self.elements }
+            let rhsElements = other.queue.sync { other.elements }
+            
+            return lhsElements == rhsElements
         }
         
         /// Adds a new element at the end of the object path.
@@ -149,11 +168,14 @@ extension DBusObjectPath: ReferenceConvertible {
         /// Use this method to append a single element to the end of a mutable object path.
         internal func append(_ element: Element) {
             
-            // lazily rebuild string
-            resetStringCache()
-            
-            // add new element
-            self.elements.append(element)
+            queue.sync(flags: [.barrier]) { [unowned self] in
+                
+                // lazily rebuild string
+                resetStringCache()
+                
+                // add new element
+                self.elements.append(element)
+            }
         }
         
         /// Removes and returns the last element of the object path.
@@ -161,11 +183,14 @@ extension DBusObjectPath: ReferenceConvertible {
         /// - Precondition: The object path must not be empty.
         internal func removeLast() -> Element {
             
-            // lazily rebuild string
-            resetStringCache()
-            
-            // remove element
-            return self.elements.removeLast()
+            return queue.sync(flags: [.barrier]) { [unowned self] in
+                
+                // lazily rebuild string
+                resetStringCache()
+                
+                // remove element
+                return self.elements.removeLast()
+            }
         }
         
         /// Removes and returns the first element of the object path.
@@ -173,24 +198,29 @@ extension DBusObjectPath: ReferenceConvertible {
         /// - Precondition: The object path must not be empty.
         internal func removeFirst() -> Element {
             
-            // lazily rebuild string
-            resetStringCache()
-            
-            // remove element
-            return self.elements.removeFirst()
+            return queue.sync(flags: [.barrier]) { [unowned self] in
+                
+                // lazily rebuild string
+                resetStringCache()
+                
+                // remove element
+                return self.elements.removeFirst()
+            }
         }
-        
         
         /// Removes and returns the element at the specified position.
         ///
         /// All the elements following the specified position are moved up to close the gap.
         internal func remove(at index: Int) -> Element {
             
-            // lazily rebuild string
-            resetStringCache()
-            
-            // remove element
-            return self.elements.remove(at: index)
+            return queue.sync(flags: [.barrier]) { [unowned self] in
+                
+                // lazily rebuild string
+                resetStringCache()
+                
+                // remove element
+                return self.elements.remove(at: index)
+            }
         }
     }
 }
@@ -257,12 +287,7 @@ extension DBusObjectPath: Equatable {
     
     public static func == (lhs: DBusObjectPath, rhs: DBusObjectPath) -> Bool {
         
-        // fast path for structs with same reference
-        guard lhs.internalReference.reference !== rhs.internalReference.reference
-            else { return true }
-        
-        // compare values
-        return lhs.internalReference.reference.elements == rhs.internalReference.reference.elements
+        return lhs.internalReference.reference.isEqual(to: rhs.internalReference.reference)
     }
 }
 
@@ -311,7 +336,7 @@ extension DBusObjectPath: MutableCollection {
     
     public var count: Int {
         
-        return internalReference.reference.elements.count
+        return internalReference.reference.count
     }
     
     /// The start `Index`.
