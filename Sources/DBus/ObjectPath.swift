@@ -290,6 +290,8 @@ extension DBusObjectPath: MutableCollection {
     }
 }
 
+extension DBusObjectPath: RandomAccessCollection { }
+
 // MARK: - Element
 
 public extension DBusObjectPath {
