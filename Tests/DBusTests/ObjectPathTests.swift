@@ -25,9 +25,9 @@ final class ObjectPathTests: XCTestCase {
             "",
             "/com/example/ñanó",
             "/com/example/bus1/",
-            //"//",
-            //"///",
-            //"\\",
+            "//",
+            "///",
+            "\\",
         ]
         
         strings.forEach { XCTAssertNil(DBusObjectPath(rawValue: $0)) }
@@ -37,6 +37,7 @@ final class ObjectPathTests: XCTestCase {
         
         let values: [(String, [String])] = [
             ("/", []),
+            ("/com", ["com"]),
             ("/com/example/bus1", ["com", "example", "bus1"])
         ]
         
