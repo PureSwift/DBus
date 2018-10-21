@@ -162,7 +162,31 @@ final class ObjectPathTests: XCTestCase {
         let end = Date() + 1.0
         while Date() < end {
             
+            let _ = originalReference.isStringCached
+            
+            for _ in 0 ..< 1000 {
+                
+                queue.async {
+                    
+                    // access variable from different threads
+                    let _ = originalReference.isStringCached
+                }
+            }
+            
             queue.async {
+                
+                let _ = originalReference.isStringCached
+                
+                /// read string
+                XCTAssert(readStringCopy.internalReference.reference === originalReference)
+                XCTAssertEqual(readStringCopy.rawValue, string)
+                XCTAssert(readStringCopy.internalReference.reference.isStringCached)
+                XCTAssert(originalReference.isStringCached)
+            }
+            
+            queue.async {
+                
+                let _ = originalReference.isStringCached
                 
                 var mutateCopy = readStringCopy
                 XCTAssert(mutateCopy.internalReference.reference === originalReference)
@@ -174,15 +198,6 @@ final class ObjectPathTests: XCTestCase {
                 XCTAssertNotEqual(mutateCopy.rawValue, string)
                 XCTAssert(mutateCopy.internalReference.reference.isStringCached)
                 XCTAssert(mutateCopy.internalReference.reference !== originalReference)
-            }
-            
-            queue.async {
-                
-                /// read string
-                XCTAssert(readStringCopy.internalReference.reference === originalReference)
-                XCTAssertEqual(readStringCopy.rawValue, string)
-                XCTAssert(readStringCopy.internalReference.reference.isStringCached)
-                XCTAssert(originalReference.isStringCached)
             }
         }
         
