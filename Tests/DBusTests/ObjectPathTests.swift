@@ -15,6 +15,7 @@ final class ObjectPathTests: XCTestCase {
         (testInvalid, "testInvalid"),
         (testValid, "testValid"),
         (testEmpty, "testEmpty"),
+        (testCopyOnWrite, "testCopyOnWrite"),
         (testCopyOnWrite, "testCopyOnWrite")
     ]
     
@@ -133,5 +134,59 @@ final class ObjectPathTests: XCTestCase {
         XCTAssertEqual(copy1.rawValue, objectPath.rawValue)
         XCTAssert(copy1.internalReference.reference === originalReference, "Should use same reference (mutated unique)")
         XCTAssert(objectPath.internalReference.reference !== copy1.internalReference.reference, "Should not use same reference")
+    }
+    
+    func testMultithread() {
+        
+        let string = "/com/example/bus1"
+        
+        let objectPath = DBusObjectPath([
+            DBusObjectPath.Element(rawValue: "com")!,
+            DBusObjectPath.Element(rawValue: "example")!,
+            DBusObjectPath.Element(rawValue: "bus1")!
+            ])
+        
+        let originalReference = objectPath.internalReference.reference
+        
+        XCTAssertFalse(objectPath.internalReference.reference.isStringCached, "String has not been calculated yet")
+        
+        // for initializing string
+        let readStringCopy = objectPath
+        
+        let queue = DispatchQueue(label: "Async", attributes: [.concurrent])
+        
+        XCTAssertFalse(originalReference.isStringCached)
+        
+        // initialize string from another thread
+        let end = Date() + 1.0
+        while Date() < end {
+            
+            queue.async {
+                
+                var mutateCopy = readStringCopy
+                XCTAssert(mutateCopy.internalReference.reference === originalReference)
+                mutateCopy.append(DBusObjectPath.Element(rawValue: "mutation")!)
+                XCTAssert(mutateCopy.internalReference.reference !== originalReference)
+                XCTAssertFalse(mutateCopy.internalReference.reference.isStringCached)
+                XCTAssertNotEqual(readStringCopy, mutateCopy)
+                XCTAssertFalse(mutateCopy.internalReference.reference.isStringCached)
+                XCTAssertNotEqual(mutateCopy.rawValue, string)
+                XCTAssert(mutateCopy.internalReference.reference.isStringCached)
+                XCTAssert(mutateCopy.internalReference.reference !== originalReference)
+            }
+            
+            queue.async {
+                
+                /// read string
+                XCTAssert(readStringCopy.internalReference.reference === originalReference)
+                XCTAssertEqual(readStringCopy.rawValue, string)
+                XCTAssert(readStringCopy.internalReference.reference.isStringCached)
+                XCTAssert(originalReference.isStringCached)
+            }
+        }
+        
+        XCTAssertEqual(objectPath.rawValue, string)
+        XCTAssert(objectPath.internalReference.reference === originalReference)
+        XCTAssert(originalReference.isStringCached)
     }
 }
