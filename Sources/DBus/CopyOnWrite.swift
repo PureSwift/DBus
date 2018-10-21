@@ -10,16 +10,29 @@ import Foundation
 /// Swift struct wrapper for copyable object.
 internal protocol ReferenceConvertible {
     
+    /// Underlying reference type.
     associatedtype Reference: CopyableReference
     
+    /// Reference to underlying object.
     var internalReference: CopyOnWrite<Reference> { get }
     
+    /// Initialized with internal reference.
     init(_ internalReference: CopyOnWrite<Reference>)
+}
+
+internal extension ReferenceConvertible {
+    
+    /// Initializes with a new reference.
+    init(_ reference: Reference) {
+        
+        self.init(CopyOnWrite(reference))
+    }
 }
 
 /// A copyable object
 internal protocol CopyableReference: class {
     
+    /// Clone the current object. 
     var copy: Self { get }
 }
 

@@ -11,21 +11,23 @@ import Foundation
 public struct DBusObjectPath {
     
     @_versioned
-    internal let reference: Reference
+    internal let internalReference: CopyOnWrite<Reference>
     
-    /// Reference type with value semantics
-    internal init(reference: Reference) {
+    internal init(_ internalReference: CopyOnWrite<Reference>) {
         
-        self.reference = reference
+        self.internalReference = internalReference
     }
 }
 
 // MARK: - Reference Implementation
 
-internal extension DBusObjectPath {
+extension DBusObjectPath: ReferenceConvertible {
     
     /// Internal cache
-    final class Reference {
+    final class Reference: CopyableReference {
+        
+        /// Default value (`/`)
+        internal static let `default` = Reference()
         
         /// initialize with the elements
         internal init(elements: [Element] = []) {
@@ -75,6 +77,18 @@ internal extension DBusObjectPath {
             return stringCache != nil
         }
         
+        internal var copy: Reference {
+            
+            // initialize new instance with underlying elements
+            let copy = Reference(elements: elements)
+            
+            // dont copy cached string, because the object is mostly likely going to be mutated
+            //copy.stringCache = stringCache
+            assert(copy.isStringCached == false)
+            
+            return copy
+        }
+        
         /// lazily initialized string value
         internal var string: String {
             
@@ -117,28 +131,28 @@ public extension DBusObjectPath {
     
     public init() {
         
-        self.init(reference: Reference())
+        self.init(Reference.default) // all new empty paths should point to same underlying object
     }
     
     /// Initialize with an array of elements.
     public init(_ elements: [Element]) {
         
         let reference = Reference(elements: elements)
-        self.init(reference: reference)
+        self.init(reference)
     }
     
     /// Initialize with a variable argument list of elements.
     public init(_ elements: Element...) {
         
         let reference = Reference(elements: elements)
-        self.init(reference: reference)
+        self.init(reference)
     }
     
     /// Initialize with a sequence of elements.
     public init <S: Sequence> (_ sequence: S) where S.Element == Element {
         
         let reference = Reference(elements: Array(sequence))
-        self.init(reference: reference)
+        self.init(reference)
     }
 }
 
@@ -151,12 +165,12 @@ extension DBusObjectPath: RawRepresentable {
         guard let reference = Reference(string: rawValue)
             else { return nil }
         
-        self.init(reference: reference)
+        self.init(reference)
     }
     
     public var rawValue: String {
         
-        get { return reference.string }
+        get { return internalReference.reference.string }
     }
 }
 
@@ -167,11 +181,11 @@ extension DBusObjectPath: Equatable {
     public static func == (lhs: DBusObjectPath, rhs: DBusObjectPath) -> Bool {
         
         // fast path for structs with same reference
-        guard lhs.reference !== rhs.reference
+        guard lhs.internalReference.reference !== rhs.internalReference.reference
             else { return true }
         
         // compare values
-        return lhs.reference.elements == rhs.reference.elements
+        return lhs.internalReference.reference.elements == rhs.internalReference.reference.elements
     }
 }
 
@@ -181,7 +195,7 @@ extension DBusObjectPath: Hashable {
     
     public var hashValue: Int {
         
-        return reference.string.hashValue
+        return internalReference.reference.string.hashValue
     }
 }
 
@@ -195,6 +209,16 @@ extension DBusObjectPath: CustomStringConvertible {
     }
 }
 
+// MARK: - Array Literal
+
+extension DBusObjectPath: ExpressibleByArrayLiteral {
+    
+    public init(arrayLiteral elements: Element...) {
+        
+        self.init(elements)
+    }
+}
+
 // MARK: - Collection
 
 extension DBusObjectPath: Collection {
@@ -203,11 +227,12 @@ extension DBusObjectPath: Collection {
     
     public subscript (index: Index) -> Element {
      
-        return reference.elements[index]
+        return internalReference.reference.elements[index]
     }
     
     public var count: Int {
-        return reference.elements.count
+        
+        return internalReference.reference.elements.count
     }
     
     /// The start `Index`.
