@@ -61,7 +61,7 @@ extension DBusObjectPath: ReferenceConvertible {
             }
             
             self.init(elements: elements)
-            self.stringCache = string // store parsed string
+            self.stringCache.write(string) // store parsed string
         }
         
         /// Parsed elements. Always initialized to this value.
@@ -85,18 +85,18 @@ extension DBusObjectPath: ReferenceConvertible {
         }
         
         /// Cached String value.
-        private var stringCache: String?
+        private var stringCache = Atomic<String?>()
         
         @inline(__always)
         private func resetStringCache() {
             
-            self.stringCache = nil
+            self.stringCache.clear()
         }
         
         /// Whether the string value is internally cached
         internal var isStringCached: Bool {
             
-            return stringCache != nil
+            return stringCache.read() != nil
         }
         
         internal var copy: Reference {
@@ -114,7 +114,7 @@ extension DBusObjectPath: ReferenceConvertible {
         /// lazily initialized string value
         internal var string: String {
             
-            guard let cache = stringCache else {
+            guard let cache = stringCache.read() else {
                 
                 // lazily initialize
                 let separator = String(DBusObjectPath.separator)
@@ -122,7 +122,7 @@ extension DBusObjectPath: ReferenceConvertible {
                     elements.reduce("", { $0 + separator + $1.rawValue })
                 
                 // cache value
-                stringCache = stringValue
+                stringCache.write(stringValue)
                 
                 return stringValue
             }
