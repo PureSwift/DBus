@@ -177,6 +177,29 @@ final class ObjectPathTests: XCTestCase {
         XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 3)
         XCTAssertNotEqual(copy1.rawValue, objectPath.rawValue)
         XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 3)
+        
+        // multiple mutations without recalculating the string value
+        var mutable: DBusObjectPath = []
+        let mutableReference = mutable.internalReference.reference
+        XCTAssertFalse(mutableReference.isStringCached)
+        XCTAssertEqual(mutableReference.lazyStringBuild.read(), 0)
+        
+        for i in 1 ... 100 {
+            mutable.append(DBusObjectPath.Element(rawValue: "mutation\(i)")!)
+        }
+        
+        XCTAssertFalse(mutable.isEmpty)
+        XCTAssertEqual(mutable.count, 100)
+        XCTAssert(mutable.internalReference.reference === mutableReference, "Should be same reference")
+        XCTAssertFalse(mutableReference.isStringCached)
+        XCTAssertEqual(mutableReference.lazyStringBuild.read(), 0)
+        XCTAssertNotEqual(mutable.rawValue, "/")
+        XCTAssert(mutable.internalReference.reference.isStringCached)
+        XCTAssertEqual(mutable.internalReference.reference.lazyStringBuild.read(), 1)
+        XCTAssert(mutableReference.isStringCached)
+        XCTAssertEqual(mutableReference.lazyStringBuild.read(), 1)
+        XCTAssertNotEqual(mutable.rawValue, "/")
+        XCTAssertEqual(mutableReference.lazyStringBuild.read(), 1)
     }
     
     func testMultithread() {
