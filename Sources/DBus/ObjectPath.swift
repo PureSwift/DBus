@@ -38,8 +38,9 @@ internal extension DBusObjectPath {
             
             // The path must begin with an ASCII '/' (integer 47) character,
             // and must consist of elements separated by slash characters.
-            guard let firstCharacter = string.first,
-                firstCharacter == DBusObjectPath.separator
+            guard let firstCharacter = string.first, // cant't be empty string
+                firstCharacter == DBusObjectPath.separator, // must start with "/"
+                string.count == 1 || string.last != DBusObjectPath.separator // last character 
                 else { return nil }
             
             let pathStrings = string.split(separator: DBusObjectPath.separator,
@@ -62,7 +63,8 @@ internal extension DBusObjectPath {
         }
         
         /// Parsed elements. Always initialized to this value.
-        internal let elements: [Element]
+        @_versioned
+        internal private(set) var elements: [Element]
         
         /// Cached String value.
         private var stringCache: String?
@@ -90,6 +92,16 @@ internal extension DBusObjectPath {
             }
             
             return cache
+        }
+        
+        /// Append a new element.
+        internal func append(_ element: Element) {
+            
+            // add new element
+            self.elements.append(element)
+            
+            // lazily rebuild string
+            stringCache = nil
         }
     }
 }

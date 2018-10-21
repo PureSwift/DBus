@@ -20,14 +20,14 @@ final class ObjectPathTests: XCTestCase {
         
         let strings = [
             "",
+            "/com/example/ñanó",
+            "/com/example/bus1/",
             //"//",
             //"///",
             //"\\",
-            "/com/example/bus1/",
-            "/com/example/ñanó"
         ]
         
-        //strings.forEach { XCTAssertNil(DBusObjectPath(rawValue: $0)) }
+        strings.forEach { XCTAssertNil(DBusObjectPath(rawValue: $0)) }
     }
     
     func testValid() {
@@ -44,6 +44,7 @@ final class ObjectPathTests: XCTestCase {
                 else { XCTFail("Invalid string \(string)"); return }
             
             // test underlying values
+            XCTAssert(objectPath.reference.isStringCached)
             XCTAssertEqual(objectPath.reference.elements.map { $0.rawValue }, elements, "Invalid elements")
             XCTAssertEqual(objectPath.rawValue, string)
             XCTAssertEqual(objectPath.description, string)
@@ -59,9 +60,10 @@ final class ObjectPathTests: XCTestCase {
             XCTAssertEqual(elementsObjectPath.reference.elements, elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
             XCTAssertEqual(Array(elementsObjectPath), elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
             
-            // test lazy string
-            XCTAssertEqual(elementsObjectPath.reference.string, string)
+            // test lazy string initialization
+            XCTAssertFalse(elementsObjectPath.reference.isStringCached)
             XCTAssertEqual(elementsObjectPath.rawValue, string)
+            XCTAssert(elementsObjectPath.reference.isStringCached)
             
             // test equality
             XCTAssertEqual(objectPath, objectPath)
@@ -73,5 +75,10 @@ final class ObjectPathTests: XCTestCase {
             XCTAssertEqual(objectPath.rawValue, elementsObjectPath.rawValue)
             XCTAssertEqual(Array(objectPath), Array(elementsObjectPath))
         }
+    }
+    
+    func testMutability() {
+        
+        
     }
 }
