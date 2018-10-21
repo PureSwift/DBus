@@ -88,7 +88,7 @@ extension DBusObjectPath: ReferenceConvertible {
         private var stringCache = Atomic<String?>()
         
         /// Counter for lazy string rebuilds
-        internal var lazyStringBuild = 0
+        internal var lazyStringBuild = Atomic<Int>(0)
         
         @inline(__always)
         private func resetStringCache() {
@@ -128,7 +128,7 @@ extension DBusObjectPath: ReferenceConvertible {
                 stringCache.write(stringValue)
                 
                 // increment counter
-                lazyStringBuild += 1
+                lazyStringBuild.write(lazyStringBuild.read() + 1)
                 
                 return stringValue
             }

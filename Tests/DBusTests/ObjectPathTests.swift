@@ -80,6 +80,9 @@ final class ObjectPathTests: XCTestCase {
             XCTAssertEqual(objectPath.internalReference.reference.string, elementsObjectPath.internalReference.reference.string)
             XCTAssertEqual(objectPath.rawValue, elementsObjectPath.rawValue)
             XCTAssertEqual(Array(objectPath), Array(elementsObjectPath))
+            
+            // string was never calculated / lazily initialized
+            XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 0)
         }
     }
     
@@ -87,7 +90,9 @@ final class ObjectPathTests: XCTestCase {
         
         // empty object path
         let objectPath = DBusObjectPath()
+        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 0)
         XCTAssertEqual(objectPath.rawValue, "/")
+        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 1)
         XCTAssert(objectPath.isEmpty)
         XCTAssertEqual(objectPath, [])
         XCTAssertEqual(DBusObjectPath(), DBusObjectPath(rawValue: "/"))
@@ -106,6 +111,9 @@ final class ObjectPathTests: XCTestCase {
         mutable.append(DBusObjectPath.Element(rawValue: "mutation1")!)
         XCTAssert(mutable.internalReference.reference !== objectPath.internalReference.reference)
         XCTAssertNotEqual(mutable, objectPath)
+        
+        // string should only be calculated once
+        XCTAssertEqual(DBusObjectPath.Reference.default.lazyStringBuild.read(), 1)
     }
     
     func testCopyOnWrite() {
@@ -116,10 +124,14 @@ final class ObjectPathTests: XCTestCase {
             else { XCTFail("Invalid string \(string)"); return }
         
         let originalReference = objectPath.internalReference.reference
+        XCTAssertEqual(originalReference.lazyStringBuild.read(), 0)
         
         // mutate, should not copy (ref count == 1)
         objectPath.append(DBusObjectPath.Element(rawValue: "mutation1")!)
         XCTAssert(objectPath.internalReference.reference === originalReference, "Should use same reference")
+        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 0)
+        XCTAssertEqual(objectPath.rawValue, "/com/example/bus1/mutation1")
+        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 1)
         
         // same instance (ref count == 2)
         var copy1 = objectPath
@@ -127,11 +139,14 @@ final class ObjectPathTests: XCTestCase {
         XCTAssertEqual(copy1.rawValue, objectPath.rawValue)
         XCTAssert(copy1.internalReference.reference === originalReference, "Should use same reference")
         XCTAssert(copy1.internalReference.reference === objectPath.internalReference.reference, "Should use same reference")
+        XCTAssertEqual(copy1.internalReference.reference.lazyStringBuild.read(), 1)
         
         // should copy when mutating since ref is shared
         objectPath.append(DBusObjectPath.Element(rawValue: "mutation2")!)
+        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 0)
         XCTAssertNotEqual(copy1, objectPath)
         XCTAssertNotEqual(copy1.rawValue, objectPath.rawValue)
+        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild.read(), 1)
         XCTAssert(copy1.internalReference.reference === originalReference, "Should use same reference (not mutated)")
         XCTAssert(objectPath.internalReference.reference !== originalReference, "Should not use same reference")
         XCTAssert(objectPath.internalReference.reference !== copy1.internalReference.reference, "Should not use same reference")
