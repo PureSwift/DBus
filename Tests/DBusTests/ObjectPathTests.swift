@@ -112,6 +112,14 @@ final class ObjectPathTests: XCTestCase {
         mutable.append(DBusObjectPath.Element(rawValue: "mutation1")!)
         XCTAssert(mutable.internalReference.reference !== objectPath.internalReference.reference)
         XCTAssertNotEqual(mutable, objectPath)
+        mutable.removeLast()
+        XCTAssertEqual(mutable, objectPath)
+        XCTAssert(mutable.internalReference.reference !== objectPath.internalReference.reference)
+        XCTAssertFalse(mutable.internalReference.reference.isStringCached)
+        XCTAssertEqual(mutable.internalReference.reference.lazyStringBuild.read(), 0)
+        XCTAssertEqual(mutable.rawValue, objectPath.rawValue)
+        XCTAssert(mutable.internalReference.reference.isStringCached)
+        XCTAssertEqual(mutable.internalReference.reference.lazyStringBuild.read(), 1)
         
         // string should only be calculated once
         XCTAssertEqual(DBusObjectPath.Reference.default.lazyStringBuild.read(), 1)
