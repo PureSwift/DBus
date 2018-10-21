@@ -13,21 +13,22 @@ internal final class Atomic <T> {
     
     private var value: T
     
-    private let queue: DispatchQueue
+    private let queue = DispatchQueue(label: "Atomic \(T.self) Queue", qos: .default, attributes: [.concurrent])
     
-    public init(_ value: T) {
+    /// Initialize Atomic value. 
+    internal init(_ value: T) {
         
         self.value = value
-        self.queue = DispatchQueue(label: "Atomic \(T.self) Queue", qos: .default, attributes: [.concurrent])
     }
     
-    public func read() -> T {
+    /// Async read
+    internal func read() -> T {
         
         return queue.sync { [unowned self] in return self.value }
     }
     
     /// Async write
-    public func write(_ block: @escaping (inout T) -> ()) {
+    internal func write(_ block: @escaping (inout T) -> ()) {
         
         queue.async(flags: .barrier) { [weak self] in
             
@@ -38,7 +39,8 @@ internal final class Atomic <T> {
         }
     }
     
-    public func write(_ newValue: T) {
+    /// Async write
+    internal func write(_ newValue: T) {
         
         self.write { $0 = newValue }
     }

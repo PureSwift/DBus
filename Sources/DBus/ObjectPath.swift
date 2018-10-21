@@ -30,9 +30,15 @@ extension DBusObjectPath: ReferenceConvertible {
         internal static let `default` = Reference()
         
         /// initialize with the elements
-        internal init(elements: [Element] = []) {
+        private init(elements: [Element], string: String?) {
             
             self.elements = elements
+            self.stringCache = Atomic(string)
+        }
+        
+        internal convenience init(elements: [Element] = []) {
+            
+            self.init(elements: elements, string: nil)
         }
         
         /// Initialize with a string.
@@ -60,8 +66,7 @@ extension DBusObjectPath: ReferenceConvertible {
                 elements.append(element)
             }
             
-            self.init(elements: elements)
-            self.stringCache.write(string) // store parsed string
+            self.init(elements: elements, string: string)
         }
         
         /// Parsed elements. Always initialized to this value.
@@ -85,10 +90,10 @@ extension DBusObjectPath: ReferenceConvertible {
         }
         
         /// Cached String value.
-        private var stringCache = Atomic<String?>()
+        private let stringCache: Atomic<String?>
         
         /// Counter for lazy string rebuilds
-        internal var lazyStringBuild = Atomic<UInt>(0)
+        internal let lazyStringBuild = Atomic<UInt>(0)
         
         /// Resets and clears the string cache.
         ///
