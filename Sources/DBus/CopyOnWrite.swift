@@ -7,13 +7,23 @@
 
 import Foundation
 
+/// Swift struct wrapper for copyable object.
+internal protocol ReferenceConvertible {
+    
+    associatedtype Reference: CopyableReference
+    
+    var internalReference: CopyOnWrite<Reference> { get }
+    
+    init(_ internalReference: CopyOnWrite<Reference>)
+}
+
+/// A copyable object
 internal protocol CopyableReference: class {
     
     var copy: Self { get }
 }
 
 /// Encapsulates behavior surrounding value semantics and copy-on-write behavior
-/// Modified version of https://github.com/klundberg/CopyOnWrite
 internal struct CopyOnWrite <Reference: CopyableReference> {
     
     /// Needed for `isKnownUniquelyReferenced`
@@ -27,13 +37,14 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
         }
     }
     
-    var _reference: Box
+    /// Box object whose reference count is checked for uniqueness.
+    @_versioned
+    internal var _reference: Box
     
-    /// Constructs the copy-on-write wrapper around the given reference and copy function
+    /// Constructs the copy-on-write wrapper around the given reference.
     ///
     /// - Parameters:
     ///   - reference: The object that is to be given value semantics
-    ///   - externalRetain: Whether the object should be copied on next mutation regardless of Swift ARC uniqueness.
     @inline(__always)
     init(_ reference: Reference) {
         self._reference = Box(reference)
@@ -57,7 +68,7 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
             // copy the reference if multiple structs are backed by the reference
             if isUniquelyReferenced == false {
                 
-                // make copy
+                // make copy of underlying reference object (not box used for ARC)
                 let copy = _reference.unbox.copy
                 _reference = Box(copy)
             }
@@ -67,11 +78,10 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
     }
     
     /// Helper property to determine whether the reference is uniquely held.
-    /// Checks both Swift ARC and the external C manual reference count.
     internal var isUniquelyReferenced: Bool {
         @inline(__always)
         mutating get {
-            return isKnownUniquelyReferenced(&_reference)
+            return isKnownUniquelyReferenced(&_reference) // check ARC reference count of box
         }
     }
 }
