@@ -67,6 +67,12 @@ internal extension DBusObjectPath {
         /// Cached String value.
         private var stringCache: String?
         
+        /// Whether the string value is internally cached
+        internal var isStringCached: Bool {
+            
+            return stringCache != nil
+        }
+        
         /// lazily initialized string value
         internal var string: String {
             
