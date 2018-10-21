@@ -161,7 +161,7 @@ final class ObjectPathTests: XCTestCase {
         // for initializing string
         let readStringCopy = objectPath
         
-        let queue = DispatchQueue(label: "Async", attributes: [.concurrent])
+        let queue = DispatchQueue(label: "\(#function) Queue", attributes: [.concurrent])
         
         XCTAssertFalse(originalReference.isStringCached)
         
