@@ -336,22 +336,37 @@ extension DBusObjectPath: MutableCollection {
         internalReference.mutatingReference.append(element)
     }
     
+    /// Removes and returns the first element of the collection.
+    ///
+    /// - Precondition: The collection must not be empty.
     @discardableResult
     mutating func removeFirst() -> Element {
         
         return internalReference.mutatingReference.removeFirst()
     }
     
+    /// Removes and returns the last element of the collection.
+    ///
+    /// - Precondition: The collection must not be empty.
     @discardableResult
     mutating func removeLast() -> Element {
         
         return internalReference.mutatingReference.removeLast()
     }
     
+    /// Removes and returns the element at the specified position.
+    ///
+    /// All the elements following the specified position are moved up to close the gap.
     @discardableResult
     mutating func remove(at index: Int) -> Element {
         
         return internalReference.mutatingReference.remove(at: index)
+    }
+    
+    /// Removes all elements from the collection.
+    mutating func removeAll() {
+        
+        self = DBusObjectPath() // initialize to singleton
     }
 }
 

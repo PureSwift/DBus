@@ -24,6 +24,7 @@ final class ObjectPathTests: XCTestCase {
         let strings = [
             "",
             "/com/example/ñanó",
+            "/com/example/b$@s1",
             "/com/example/bus1/",
             "//",
             "///",
