@@ -144,7 +144,9 @@ extension DBusObjectPath: ReferenceConvertible {
             return cache
         }
         
-        /// Append a new element.
+        /// Adds a new element at the end of the object path.
+        ///
+        /// Use this method to append a single element to the end of a mutable object path.
         internal func append(_ element: Element) {
             
             // lazily rebuild string
@@ -154,9 +156,9 @@ extension DBusObjectPath: ReferenceConvertible {
             self.elements.append(element)
         }
         
-        /// Removes and returns the last element of the collection.
+        /// Removes and returns the last element of the object path.
         ///
-        /// - Precondition: The collection must not be empty.
+        /// - Precondition: The object path must not be empty.
         internal func removeLast() -> Element {
             
             // lazily rebuild string
@@ -166,9 +168,9 @@ extension DBusObjectPath: ReferenceConvertible {
             return self.elements.removeLast()
         }
         
-        /// Removes and returns the first element of the collection.
+        /// Removes and returns the first element of the object path.
         ///
-        /// - Precondition: The collection must not be empty.
+        /// - Precondition: The object path must not be empty.
         internal func removeFirst() -> Element {
             
             // lazily rebuild string
@@ -336,25 +338,28 @@ extension DBusObjectPath: MutableCollection {
         return IndexingIterator(_elements: self)
     }
     
-    mutating func append(_ element: Element) {
+    /// Adds a new element at the end of the object path.
+    ///
+    /// Use this method to append a single element to the end of a mutable object path.
+    public mutating func append(_ element: Element) {
         
         internalReference.mutatingReference.append(element)
     }
     
-    /// Removes and returns the first element of the collection.
+    /// Removes and returns the first element of the object path.
     ///
-    /// - Precondition: The collection must not be empty.
+    /// - Precondition: The object path must not be empty.
     @discardableResult
-    mutating func removeFirst() -> Element {
+    public mutating func removeFirst() -> Element {
         
         return internalReference.mutatingReference.removeFirst()
     }
     
-    /// Removes and returns the last element of the collection.
+    /// Removes and returns the last element of the object path.
     ///
-    /// - Precondition: The collection must not be empty.
+    /// - Precondition: The object path must not be empty.
     @discardableResult
-    mutating func removeLast() -> Element {
+    public mutating func removeLast() -> Element {
         
         return internalReference.mutatingReference.removeLast()
     }
@@ -363,13 +368,13 @@ extension DBusObjectPath: MutableCollection {
     ///
     /// All the elements following the specified position are moved up to close the gap.
     @discardableResult
-    mutating func remove(at index: Int) -> Element {
+    public mutating func remove(at index: Int) -> Element {
         
         return internalReference.mutatingReference.remove(at: index)
     }
     
-    /// Removes all elements from the collection.
-    mutating func removeAll() {
+    /// Removes all elements from the object path.
+    public mutating func removeAll() {
         
         self = DBusObjectPath() // initialize to singleton
     }
