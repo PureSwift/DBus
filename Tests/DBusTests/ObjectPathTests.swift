@@ -99,6 +99,13 @@ final class ObjectPathTests: XCTestCase {
         XCTAssert(objectPath.internalReference.reference === DBusObjectPath().internalReference.reference)
         XCTAssert(DBusObjectPath().internalReference.reference === DBusObjectPath().internalReference.reference)
         
+        // don't break value semantics by modifying global instance
+        var mutable = DBusObjectPath()
+        XCTAssertEqual(mutable, objectPath)
+        XCTAssert(mutable.internalReference.reference === objectPath.internalReference.reference)
+        mutable.append(DBusObjectPath.Element(rawValue: "mutation1")!)
+        XCTAssert(mutable.internalReference.reference !== objectPath.internalReference.reference)
+        XCTAssertNotEqual(mutable, objectPath)
     }
     
     func testCopyOnWrite() {
