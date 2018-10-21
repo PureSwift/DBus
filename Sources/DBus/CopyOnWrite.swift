@@ -23,6 +23,9 @@ internal protocol ReferenceConvertible {
 internal extension ReferenceConvertible {
     
     /// Initializes with a new reference.
+    ///
+    /// - Precondition: The reference must be a newly instantiated unique instance (ARC reference count == 1),
+    /// and not be a singleton or externally referenced anywhere else in the codebase.
     init(_ reference: Reference) {
         
         self.init(CopyOnWrite(reference))

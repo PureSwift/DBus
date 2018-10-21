@@ -16,7 +16,7 @@ final class ObjectPathTests: XCTestCase {
         (testValid, "testValid"),
         (testEmpty, "testEmpty"),
         (testCopyOnWrite, "testCopyOnWrite"),
-        (testCopyOnWrite, "testCopyOnWrite")
+        (testMultithread, "testMultithread")
     ]
     
     func testInvalid() {
@@ -75,6 +75,7 @@ final class ObjectPathTests: XCTestCase {
             XCTAssertEqual(objectPath, elementsObjectPath)
             
             // test internal reference
+            XCTAssert(objectPath.internalReference.reference !== DBusObjectPath.Reference.default)
             XCTAssert(objectPath.internalReference.reference !== elementsObjectPath.internalReference.reference)
             XCTAssertEqual(objectPath.internalReference.reference.elements, elementsObjectPath.internalReference.reference.elements)
             XCTAssertEqual(objectPath.internalReference.reference.string, elementsObjectPath.internalReference.reference.string)
@@ -171,7 +172,8 @@ final class ObjectPathTests: XCTestCase {
         
         let originalReference = objectPath.internalReference.reference
         
-        XCTAssertFalse(objectPath.internalReference.reference.isStringCached, "String has not been calculated yet")
+        XCTAssertFalse(originalReference.isStringCached, "String has not been calculated yet")
+        XCTAssertEqual(originalReference.lazyStringBuild.read(), 0)
         
         // for initializing string
         let readStringCopy = objectPath
