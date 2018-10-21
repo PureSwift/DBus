@@ -217,27 +217,53 @@ final class ObjectPathTests: XCTestCase {
         
         XCTAssertFalse(originalReference.isStringCached, "String has not been calculated yet")
         XCTAssertEqual(originalReference.lazyStringBuild.read(), 0)
-        
-        // for initializing string
-        let readStringCopy = objectPath
-        
-        let queue = DispatchQueue(label: "\(#function) Queue", attributes: [.concurrent])
-        
         XCTAssertFalse(originalReference.isStringCached)
         
+        // instance for initializing string
+        let readStringCopy = objectPath
+        
         // initialize string from another thread
+        let queue = DispatchQueue(label: "\(#function) Queue", attributes: [.concurrent])
         let end = Date() + 1.0
         while Date() < end {
             
             let _ = originalReference.isStringCached
             
             for _ in 0 ..< 1000 {
+
+                var newObjectPath: DBusObjectPath = []
+                XCTAssertEqual(newObjectPath.rawValue, "/")
+                
+                XCTAssertEqual(newObjectPath.rawValue, "/")
+                newObjectPath.append(DBusObjectPath.Element(rawValue: "example")!)
+                XCTAssertEqual(newObjectPath.rawValue, "/example")
+                newObjectPath.append(DBusObjectPath.Element(rawValue: "mutation")!)
                 
                 queue.async {
                     
                     // access variable from different threads
                     let _ = originalReference.isStringCached
+                    
+                    // trigger lazy initialization from another thread
+                    XCTAssertEqual(newObjectPath.rawValue, "/example/mutation")
+                    
+                    var mutableCopy1 = newObjectPath
+                    var mutableCopy2 = newObjectPath
+                    
+                    queue.async {
+                        
+                        mutableCopy1.append(DBusObjectPath.Element(rawValue: "1")!)
+                        XCTAssertEqual(mutableCopy1.rawValue, "/example/mutation/1")
+                    }
+                    
+                    queue.async {
+                        
+                        mutableCopy2.append(DBusObjectPath.Element(rawValue: "2")!)
+                        XCTAssertEqual(mutableCopy2.rawValue, "/example/mutation/2")
+                    }
                 }
+                
+                //newObjectPath.append(DBusObjectPath.Element(rawValue: "mutation2")!)
             }
             
             queue.async {
@@ -266,6 +292,8 @@ final class ObjectPathTests: XCTestCase {
                 XCTAssert(mutateCopy.internalReference.reference.isStringCached)
                 XCTAssert(mutateCopy.internalReference.reference !== originalReference)
             }
+            
+            
         }
         
         XCTAssertEqual(objectPath.rawValue, string)
