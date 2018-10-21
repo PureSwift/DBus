@@ -11,7 +11,7 @@ import Foundation
 public struct DBusObjectPath {
     
     @_versioned
-    internal let internalReference: CopyOnWrite<Reference>
+    internal private(set) var internalReference: CopyOnWrite<Reference>
     
     internal init(_ internalReference: CopyOnWrite<Reference>) {
         
@@ -68,8 +68,30 @@ extension DBusObjectPath: ReferenceConvertible {
         @_versioned
         internal private(set) var elements: [Element]
         
+        internal fileprivate(set) subscript (index: Int) -> Element {
+            
+            @inline(__always)
+            get { return elements[index] }
+            
+            @inline(__always)
+            set {
+                
+                // set new value
+                elements[index] = newValue
+                
+                // reset cache
+                resetStringCache()
+            }
+        }
+        
         /// Cached String value.
         private var stringCache: String?
+        
+        @inline(__always)
+        private func resetStringCache() {
+            
+            self.stringCache = nil
+        }
         
         /// Whether the string value is internally cached
         internal var isStringCached: Bool {
@@ -115,7 +137,7 @@ extension DBusObjectPath: ReferenceConvertible {
             self.elements.append(element)
             
             // lazily rebuild string
-            stringCache = nil
+            resetStringCache()
         }
     }
 }
@@ -221,13 +243,15 @@ extension DBusObjectPath: ExpressibleByArrayLiteral {
 
 // MARK: - Collection
 
-extension DBusObjectPath: Collection {
+extension DBusObjectPath: MutableCollection {
     
     public typealias Index = Int
     
     public subscript (index: Index) -> Element {
      
-        return internalReference.reference.elements[index]
+        get { return internalReference.reference[index] }
+        
+        mutating set { internalReference.mutatingReference[index] = newValue }
     }
     
     public var count: Int {
@@ -257,6 +281,12 @@ extension DBusObjectPath: Collection {
     
     public func makeIterator() -> IndexingIterator<DBusObjectPath> {
         return IndexingIterator(_elements: self)
+    }
+    
+    mutating func append(_ element: Element) {
+        
+        // copy (if neccesary) and mutate underlying object
+        internalReference.mutatingReference.append(element)
     }
 }
 

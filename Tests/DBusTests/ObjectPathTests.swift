@@ -13,7 +13,9 @@ final class ObjectPathTests: XCTestCase {
     
     static let allTests = [
         (testInvalid, "testInvalid"),
-        (testValid, "testValid")
+        (testValid, "testValid"),
+        (testEmpty, "testEmpty"),
+        (testCopyOnWrite, "testCopyOnWrite")
     ]
     
     func testInvalid() {
@@ -101,9 +103,35 @@ final class ObjectPathTests: XCTestCase {
         
         let string = "/com/example/bus1"
         
-        guard let objectPath = DBusObjectPath(rawValue: string)
+        guard var objectPath = DBusObjectPath(rawValue: string)
             else { XCTFail("Invalid string \(string)"); return }
         
+        let originalReference = objectPath.internalReference.reference
         
+        // mutate, should not copy (ref count == 1)
+        objectPath.append(DBusObjectPath.Element(rawValue: "mutation1")!)
+        XCTAssert(objectPath.internalReference.reference === originalReference, "Should use same reference")
+        
+        // same instance (ref count == 2)
+        var copy1 = objectPath
+        XCTAssertEqual(copy1, objectPath)
+        XCTAssertEqual(copy1.rawValue, objectPath.rawValue)
+        XCTAssert(copy1.internalReference.reference === originalReference, "Should use same reference")
+        XCTAssert(copy1.internalReference.reference === objectPath.internalReference.reference, "Should use same reference")
+        
+        // should copy when mutating since ref is shared
+        objectPath.append(DBusObjectPath.Element(rawValue: "mutation2")!)
+        XCTAssertNotEqual(copy1, objectPath)
+        XCTAssertNotEqual(copy1.rawValue, objectPath.rawValue)
+        XCTAssert(copy1.internalReference.reference === originalReference, "Should use same reference (not mutated)")
+        XCTAssert(objectPath.internalReference.reference !== originalReference, "Should not use same reference")
+        XCTAssert(objectPath.internalReference.reference !== copy1.internalReference.reference, "Should not use same reference")
+        
+        // copy should not be unique, mutations should not copy
+        copy1.append(DBusObjectPath.Element(rawValue: "mutation2")!)
+        XCTAssertEqual(copy1, objectPath)
+        XCTAssertEqual(copy1.rawValue, objectPath.rawValue)
+        XCTAssert(copy1.internalReference.reference === originalReference, "Should use same reference (mutated unique)")
+        XCTAssert(objectPath.internalReference.reference !== copy1.internalReference.reference, "Should not use same reference")
     }
 }
