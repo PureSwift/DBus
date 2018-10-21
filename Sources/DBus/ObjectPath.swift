@@ -90,6 +90,9 @@ extension DBusObjectPath: ReferenceConvertible {
         /// Counter for lazy string rebuilds
         internal var lazyStringBuild = Atomic<UInt>(0)
         
+        /// Resets and clears the string cache.
+        ///
+        /// - Note: This should only be neccesary for unique references that are reused upon mutation. 
         @inline(__always)
         private func resetStringCache() {
             
@@ -139,11 +142,48 @@ extension DBusObjectPath: ReferenceConvertible {
         /// Append a new element.
         internal func append(_ element: Element) {
             
+            // lazily rebuild string
+            resetStringCache()
+            
             // add new element
             self.elements.append(element)
+        }
+        
+        /// Removes and returns the last element of the collection.
+        ///
+        /// - Precondition: The collection must not be empty.
+        internal func removeLast() -> Element {
             
             // lazily rebuild string
             resetStringCache()
+            
+            // remove element
+            return self.elements.removeLast()
+        }
+        
+        /// Removes and returns the first element of the collection.
+        ///
+        /// - Precondition: The collection must not be empty.
+        internal func removeFirst() -> Element {
+            
+            // lazily rebuild string
+            resetStringCache()
+            
+            // remove element
+            return self.elements.removeFirst()
+        }
+        
+        
+        /// Removes and returns the element at the specified position.
+        ///
+        /// All the elements following the specified position are moved up to close the gap.
+        internal func remove(at index: Int) -> Element {
+            
+            // lazily rebuild string
+            resetStringCache()
+            
+            // remove element
+            return self.elements.remove(at: index)
         }
     }
 }
@@ -293,8 +333,25 @@ extension DBusObjectPath: MutableCollection {
     
     mutating func append(_ element: Element) {
         
-        // copy (if neccesary) and mutate underlying object
         internalReference.mutatingReference.append(element)
+    }
+    
+    @discardableResult
+    mutating func removeFirst() -> Element {
+        
+        return internalReference.mutatingReference.removeFirst()
+    }
+    
+    @discardableResult
+    mutating func removeLast() -> Element {
+        
+        return internalReference.mutatingReference.removeLast()
+    }
+    
+    @discardableResult
+    mutating func remove(at index: Int) -> Element {
+        
+        return internalReference.mutatingReference.remove(at: index)
     }
 }
 
