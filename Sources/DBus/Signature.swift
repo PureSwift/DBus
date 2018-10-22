@@ -152,14 +152,6 @@ internal extension DBusSignature.ValueType {
     }
 }
 
-public extension DBusSignature.ValueType {
-    
-    init?(_ characters: [DBusSignature.Character]) {
-        
-        
-    }
-}
-
 public extension String {
     
     init(_ type: DBusSignature.ValueType) {
@@ -263,6 +255,53 @@ public extension DBusSignature {
 
 public extension DBusSignature.ValueType {
     
+    init?(_ characters: [DBusSignature.Character]) {
+        
+        guard let character = characters.first
+            else { return nil }
+        
+        switch character {
+            
+        // simple / single letter types
+        case .byte: self = .byte
+        case .boolean: self = .boolean
+        case .int16: self = .int16
+        case .int32: self = .int32
+        case .int64: self = .int64
+        case .uint16: self = .uint16
+        case .uint32: self = .uint32
+        case .uint64: self = .uint64
+        case .double: self = .double
+        case .fileDescriptor: self = .fileDescriptor
+        case .string: self = .string
+        case .objectPath: self = .objectPath
+        case .signature: self = .signature
+        case .variant: self = .variant
+        
+        // container types
+        case .array:
+            
+            guard characters.count > 1,
+                let valueType = DBusSignature.ValueType(Array(characters.suffix(from: 1)))
+                else { return nil }
+            
+            self = .array(valueType)
+            
+        //case .dictionary: fatalError("Confused")
+            
+        case .structStart:
+            
+            guard characters.count > 2,
+                let elements = DBusSignature.StructureType(Array(characters[ 1 ... characters.count - 2]))
+                else { return nil }
+            
+            self = .struct(elements)
+            
+        default:
+            return nil
+        }
+    }
+    
     var characters: [DBusSignature.Character] {
         
         switch self {
@@ -279,10 +318,10 @@ public extension DBusSignature.ValueType {
         case .string: return [.string]
         case .objectPath: return [.objectPath]
         case .signature: return [.signature]
-        case let .array(type): return [.array] + type.characters
-        case let .dictionary(type): return [.dictionaryEntryStart] + type.characters + [.dictionaryEntryEnd]
-        case let .struct(type): return [.structStart] + type.elements.reduce([], { $0 + $1.characters }) + [.structEnd]
         case .variant: return [.variant]
+        case let .array(type): return [.array] + type.characters
+        case let .struct(type): return [.structStart] + type.elements.reduce([], { $0 + $1.characters }) + [.structEnd]
+        case let .dictionary(type): return [.dictionaryEntryStart] + type.characters + [.dictionaryEntryEnd]
         }
     }
 }
