@@ -292,10 +292,10 @@ public extension DBusSignature.ValueType {
         case .structStart:
             
             guard characters.count > 2,
-                let elements = DBusSignature.StructureType(Array(characters[ 1 ... characters.count - 2]))
+                let structureType = DBusSignature.StructureType(characters)
                 else { return nil }
             
-            self = .struct(elements)
+            self = .struct(structureType)
             
         default:
             return nil
