@@ -86,9 +86,11 @@ public final class DBusMessage {
         
         var iterator = DBusMessageIter(message: self)
         
-        
-        
-        
+        /*
+        switch argument {
+            
+            
+        }*/
     }
     
     // MARK: - Properties
