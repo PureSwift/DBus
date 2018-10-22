@@ -142,7 +142,6 @@ public extension DBusMessageArgument {
     public var type: DBusType {
         
         switch self {
-            
         case .byte: return .byte
         case .boolean: return .boolean
         case .int16: return .int16

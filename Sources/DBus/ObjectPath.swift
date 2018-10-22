@@ -19,6 +19,46 @@ public struct DBusObjectPath {
     }
 }
 
+internal extension DBusObjectPath {
+    
+    /// Parses the object path string and returns the parsed object path.
+    static func parse(_ string: String) -> [Element]? {
+        
+        // The path must begin with an ASCII '/' (integer 47) character,
+        // and must consist of elements separated by slash characters.
+        guard let firstCharacter = string.first, // cant't be empty string
+            firstCharacter == DBusObjectPath.separator, // must start with "/"
+            string.count == 1 || string.last != DBusObjectPath.separator // last character
+            else { return nil }
+        
+        let pathStrings = string.split(separator: DBusObjectPath.separator,
+                                       maxSplits: .max,
+                                       omittingEmptySubsequences: true)
+        
+        var elements = [Element]()
+        elements.reserveCapacity(pathStrings.count) // pre-allocate buffer
+        
+        for elementString in pathStrings {
+            
+            guard let element = Element(rawValue: String(elementString))
+                else { return nil }
+            
+            elements.append(element)
+        }
+        
+        return elements
+    }
+}
+
+internal extension String {
+    
+    init(_ objectPath: [DBusObjectPath.Element]) {
+        
+        let separator = String(DBusObjectPath.separator)
+        self = objectPath.isEmpty ? separator : objectPath.reduce("", { $0 + separator + $1.rawValue })
+    }
+}
+
 // MARK: - Reference Implementation
 
 extension DBusObjectPath: ReferenceConvertible {
@@ -28,6 +68,11 @@ extension DBusObjectPath: ReferenceConvertible {
         
         /// Default value (`/`)
         internal static let `default` = Reference()
+        
+        /// Parsed elements. Always initialized to this value.
+        private var elements: [Element]
+        
+        private let queue = DispatchQueue(label: "DBusObjectPath Storage Queue", qos: .default, attributes: [.concurrent])
         
         /// initialize with the elements
         private init(elements: [Element], string: String?) {
@@ -44,35 +89,11 @@ extension DBusObjectPath: ReferenceConvertible {
         /// Initialize with a string.
         internal convenience init?(string: String) {
             
-            // The path must begin with an ASCII '/' (integer 47) character,
-            // and must consist of elements separated by slash characters.
-            guard let firstCharacter = string.first, // cant't be empty string
-                firstCharacter == DBusObjectPath.separator, // must start with "/"
-                string.count == 1 || string.last != DBusObjectPath.separator // last character 
+            guard let elements = DBusObjectPath.parse(string)
                 else { return nil }
-            
-            let pathStrings = string.split(separator: DBusObjectPath.separator,
-                                           maxSplits: .max,
-                                           omittingEmptySubsequences: true)
-            
-            var elements = [Element]()
-            elements.reserveCapacity(pathStrings.count) // pre-allocate buffer
-            
-            for elementString in pathStrings {
-                
-                guard let element = Element(rawValue: String(elementString))
-                    else { return nil }
-                
-                elements.append(element)
-            }
             
             self.init(elements: elements, string: string)
         }
-        
-        /// Parsed elements. Always initialized to this value.
-        private var elements: [Element]
-        
-        private let queue = DispatchQueue(label: "DBusObjectPath Storage Queue", qos: .default, attributes: [.concurrent])
         
         internal fileprivate(set) subscript (index: Int) -> Element {
             
@@ -97,7 +118,9 @@ extension DBusObjectPath: ReferenceConvertible {
         private var stringCache: String?
         
         /// Counter for lazy string rebuilds
+        #if os(macOS)
         internal var lazyStringBuild: UInt = 0
+        #endif
         
         /// Resets and clears the string cache.
         ///
@@ -129,14 +152,15 @@ extension DBusObjectPath: ReferenceConvertible {
                 return queue.sync(flags: [.barrier]) { [unowned self] in
                     
                     // lazily initialize
-                    let separator = String(DBusObjectPath.separator)
-                    let stringValue = self.elements.isEmpty ? separator : self.elements.reduce("", { $0 + separator + $1.rawValue })
+                    let stringValue = String(self.elements)
                     
                     // cache value
                     self.stringCache = stringValue
                     
                     // increment counter
+                    #if os(macOS)
                     self.lazyStringBuild += 1
+                    #endif
                     
                     return stringValue
                 }
