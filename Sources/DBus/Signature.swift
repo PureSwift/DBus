@@ -129,6 +129,37 @@ public extension DBusSignature {
     }
 }
 
+internal extension DBusSignature.ValueType {
+    
+    static func parse(_ string: String) -> DBusSignature.ValueType? {
+        
+        var characters = [DBusSignature.Character]()
+        characters.reserveCapacity(string.count)
+        
+        for stringCharacter in string {
+            
+            // invalid character
+            guard let character = DBusSignature.Character(rawValue: String(stringCharacter))
+                else { return nil }
+            
+            characters.append(character)
+        }
+        
+        guard let valueType = DBusSignature.ValueType(characters)
+            else { return nil }
+        
+        return valueType
+    }
+}
+
+public extension DBusSignature.ValueType {
+    
+    init?(_ characters: [DBusSignature.Character]) {
+        
+        
+    }
+}
+
 public extension String {
     
     init(_ type: DBusSignature.ValueType) {
@@ -310,3 +341,79 @@ extension DBusSignature.StructureType: RawRepresentable {
         return String(self.elements)
     }
 }
+
+// MARK: Collection
+
+extension DBusSignature.StructureType: MutableCollection {
+    
+    public typealias Element = DBusSignature.ValueType
+    
+    public typealias Index = Int
+    
+    public subscript (index: Index) -> Element {
+        
+        get { return elements[index] }
+        
+        mutating set { elements[index] = newValue }
+    }
+    
+    public var count: Int {
+        
+        return elements.count
+    }
+    
+    /// The start `Index`.
+    public var startIndex: Index {
+        return 0
+    }
+    
+    /// The end `Index`.
+    ///
+    /// This is the "one-past-the-end" position, and will always be equal to the `count`.
+    public var endIndex: Index {
+        return count
+    }
+    
+    public func index(before i: Index) -> Index {
+        return i - 1
+    }
+    
+    public func index(after i: Index) -> Index {
+        return i + 1
+    }
+    
+    public func makeIterator() -> IndexingIterator<DBusSignature.StructureType> {
+        return IndexingIterator(_elements: self)
+    }
+    
+    public mutating func append(_ element: Element) {
+        
+        elements.append(element)
+    }
+    
+    @discardableResult
+    public mutating func removeFirst() -> Element {
+        
+        return elements.removeFirst()
+    }
+    
+    @discardableResult
+    public mutating func removeLast() -> Element {
+        
+        return elements.removeLast()
+    }
+    
+    @discardableResult
+    public mutating func remove(at index: Int) -> Element {
+        
+        return elements.remove(at: index)
+    }
+    
+    /// Removes all elements from the object path.
+    public mutating func removeAll(keepingCapacity: Bool = false) {
+        
+        self.elements.removeAll(keepingCapacity: keepingCapacity)
+    }
+}
+
+extension DBusSignature.StructureType: RandomAccessCollection { }
