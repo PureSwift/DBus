@@ -52,13 +52,13 @@ extension DBusSignature: RawRepresentable {
     
     public var rawValue: String {
         
-        fatalError()
+        return String(self.elements)
     }
 }
 
 public extension DBusSignature {
     
-    public indirect enum ValueType {
+    public indirect enum ValueType: Equatable {
         
         /// Type code marking an 8-bit unsigned integer.
         case byte
@@ -123,20 +123,25 @@ public extension DBusSignature {
         
         /// Dictionary
         case dictionary(ValueType)
+        
+        /// Variant type (the type of the value is part of the value itself)
+        case variant
     }
 }
 
-extension DBusSignature.ValueType: Equatable {
+public extension String {
     
-    public static func == (lhs: DBusSignature.ValueType, rhs: DBusSignature.ValueType) -> Bool {
+    init(_ type: DBusSignature.ValueType) {
         
-        switch (lhs, rhs) {
-            
-        case (.byte, .byte): return true
-        // TODO: Equality
-        default:
-            return false
-        }
+        self.init(type.characters)
+    }
+}
+
+public extension String {
+    
+    init(_ signature: [DBusSignature.ValueType]) {
+        
+        self.init(signature.characters)
     }
 }
 
@@ -227,7 +232,7 @@ public extension DBusSignature {
 
 public extension DBusSignature.ValueType {
     
-    public var characters: [DBusSignature.Character] {
+    var characters: [DBusSignature.Character] {
         
         switch self {
         case .byte: return [.byte]
@@ -246,8 +251,24 @@ public extension DBusSignature.ValueType {
         case let .array(type): return [.array] + type.characters
         case let .dictionary(type): return [.dictionaryEntryStart] + type.characters + [.dictionaryEntryEnd]
         case let .struct(type): return [.structStart] + type.elements.reduce([], { $0 + $1.characters }) + [.structEnd]
-        //case .variant: fatalError("No idea")
+        case .variant: return [.variant]
         }
+    }
+}
+
+public extension Collection where Element == DBusSignature.ValueType {
+    
+    var characters: [DBusSignature.Character] {
+        
+        return self.reduce([], { $0 + $1.characters })
+    }
+}
+
+public extension String {
+    
+    init(_ signature: [DBusSignature.Character]) {
+        
+        self = signature.reduce("", { $0 + $1.rawValue })
     }
 }
 
@@ -286,6 +307,6 @@ extension DBusSignature.StructureType: RawRepresentable {
     
     public var rawValue: String {
         
-        fatalError()
+        return String(self.elements)
     }
 }
