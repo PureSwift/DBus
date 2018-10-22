@@ -306,8 +306,6 @@ final class ObjectPathTests: XCTestCase {
                 XCTAssert(mutateCopy.internalReference.reference.isStringCached)
                 XCTAssert(mutateCopy.internalReference.reference !== originalReference)
             }
-            
-            
         }
         
         XCTAssertEqual(objectPath.rawValue, string)

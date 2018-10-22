@@ -20,14 +20,15 @@ public indirect enum DBusMessageArgument {
     case int64(Int64)
     case uint64(UInt64)
     case double(Double)
-    case string(String)
-    case objectPath(String)
-    case signature(String)
     case fileDescriptor(CInt)
+    
+    case string(String)
+    case objectPath(DBusObjectPath)
+    case signature(String)
     
     case array([DBusMessageArgument])
     case variant(DBusMessageArgument)
     
-    //case Struct()
+    case `struct`
     case dictionaryEntry
 }

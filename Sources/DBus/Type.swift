@@ -6,6 +6,8 @@
 //  Copyright © 2016 PureSwift. All rights reserved.
 //
 
+import CDBus
+
 /// DBus Type (for internal usage with libdbus)
 public enum DBusType: String {
     
@@ -45,7 +47,7 @@ public enum DBusType: String {
     /// Unsigned 32-bit integer representing an index into an out-of-band array of file descriptors, transferred via some platform-specific mechanism
     case fileDescriptor     = "h" // h (104)
     
-    // MARK: - string-like types
+    // MARK: - String-like types
     
     /// String
     ///
@@ -81,7 +83,41 @@ public enum DBusType: String {
     ///
     /// - Note: Type code 101 'e' is reserved for use in bindings and implementations
     /// to represent the general concept of a dict or dict-entry, and must not appear in signatures used on D-Bus.
-    case dictionaryEntry    = "e"
+    case dictionaryEntry    = "e" // e (101)
+}
+
+public extension DBusType {
+    
+    /// A "basic type" is a somewhat arbitrary concept, but the intent is to include those types that
+    /// are fully-specified by a single typecode, with no additional type information or nested values.
+    var isBasic: Bool {
+        
+        return Bool(dbus_type_is_basic(Int32(integerValue)))
+    }
+    
+    /// A "container type" can contain basic types, or nested container types.
+    var isContainer: Bool {
+        
+        return Bool(dbus_type_is_container(Int32(integerValue)))
+    }
+    
+    /// Tells you whether values of this type can change length if you set them to some other value.
+    ///
+    /// For this purpose, you assume that the first byte of the old and new value would be in the same location,
+    /// so alignment padding is not a factor.
+    var isFixed: Bool {
+        
+        return Bool(dbus_type_is_fixed(Int32(integerValue)))
+    }
+}
+
+internal extension DBusType {
+    
+    /// Return `true` if the argument is a valid typecode.
+    var isValid: Bool {
+        
+        return Bool(dbus_type_is_fixed(Int32(integerValue)))
+    }
 }
 
 internal extension DBusType {
@@ -92,9 +128,38 @@ internal extension DBusType {
             else { return nil }
         
         self.init(rawValue: String(Character(scalar)))
+        
+        assert(isValid)
     }
     
     var integerValue: Int {
         return Int(rawValue.utf8.first!)
+    }
+}
+
+public extension DBusMessageArgument {
+    
+    public var type: DBusType {
+        
+        switch self {
+            
+        case .byte: return .byte
+        case .boolean: return .boolean
+        case .int16: return .int16
+        case .int32: return .int32
+        case .int64: return .int64
+        case .uint16: return .uint16
+        case .uint32: return .uint32
+        case .uint64: return .uint64
+        case .double: return .double
+        case .fileDescriptor: return .fileDescriptor
+        case .string: return .string
+        case .objectPath: return .objectPath
+        case .signature: return .signature
+        case .array: return .array
+        case .variant: return .variant
+        case .struct: return .struct
+        case .dictionaryEntry: return .dictionaryEntry
+        }
     }
 }

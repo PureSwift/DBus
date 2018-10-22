@@ -12,17 +12,10 @@ import CDBus
 public struct DBusError: Error {
     
     /// Error name field
-    public var name: DBusError.Name
+    public let name: DBusError.Name
     
     /// Error message field
-    public var message: String
-    
-    public init(name: DBusError.Name,
-                message: String) {
-        
-        self.name = name
-        self.message = message
-    }
+    public let message: String
 }
 
 public extension DBusError {

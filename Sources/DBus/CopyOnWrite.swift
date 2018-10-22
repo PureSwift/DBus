@@ -5,8 +5,6 @@
 //  Created by Alsey Coleman Miller on 10/21/18.
 //
 
-import Foundation
-
 /// Swift struct wrapper for copyable object.
 internal protocol ReferenceConvertible {
     

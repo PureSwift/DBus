@@ -84,6 +84,10 @@ public final class DBusMessage {
     
     public func append(_ argument: DBusMessageArgument) throws {
         
+        var iterator = DBusMessageIter(message: self)
+        
+        
+        
         
     }
     
