@@ -30,14 +30,14 @@ final class SignatureTests: XCTestCase {
             "a{i}",
             "v{i}",
             "a{s}",
-            //"a{sai}",
-            "a{(i)a}"
+            "a{(i)a}",
+            "a{vs}"
         ]
         
         strings.forEach {
             XCTAssertNil(DBusSignature(rawValue: $0))
             do { try DBusSignature.validate($0) }
-            catch { print($0); return }
+            catch { print(error); return }
             XCTFail("\($0) should be invalid and throw error")
         }
     }
@@ -60,7 +60,9 @@ final class SignatureTests: XCTestCase {
             ("(ii)(ii)(ii)", [.struct([.int32, .int32]), .struct([.int32, .int32]), .struct([.int32, .int32])]),
             ("a{si}", [.dictionary(DBusSignature.DictionaryType(key: .string, value: .int32)!)]),
             ("a{is}", [.dictionary(DBusSignature.DictionaryType(key: .int32, value: .string)!)]),
-            ("a{s(ai)}", [.dictionary(DBusSignature.DictionaryType(key: .string, value: .struct([.array(.int32)]))!)])
+            ("a{s(ai)}", [.dictionary(DBusSignature.DictionaryType(key: .string, value: .struct([.array(.int32)]))!)]),
+            ("a{sai}", [.dictionary(DBusSignature.DictionaryType(key: .string, value: .array(.int32))!)]),
+            ("a{sv}", [.dictionary(DBusSignature.DictionaryType(key: .string, value: .variant)!)])
         ]
         
         for (string, expectedSignature) in values {
