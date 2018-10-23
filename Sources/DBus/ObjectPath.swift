@@ -19,7 +19,7 @@ public struct DBusObjectPath {
     }
 }
 
-// MARK: - Reference Implementation
+// MARK: - ReferenceConvertible
 
 extension DBusObjectPath: ReferenceConvertible { }
 
@@ -91,7 +91,7 @@ public extension DBusObjectPath {
         
         // all new empty paths should point to same underlying object
         // and copy upon the first mutation regardless of ARC (due to being a singleton)
-        self.init(CopyOnWrite<DBusObjectPath.Reference>(.default, externalRetain: true))
+        self.init(CopyOnWrite<Reference>(.default, externalRetain: true))
     }
     
     /// Initialize with an array of elements.

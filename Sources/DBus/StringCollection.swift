@@ -21,7 +21,7 @@ internal final class StringCollection <Element: StringCollectionElement> : Copya
     private var elements: [Element]
     
     /// Access queue for thread safety
-    private let queue = DispatchQueue(label: "StringCollectionReference Storage Queue", qos: .default, attributes: [.concurrent])
+    private let queue = DispatchQueue(label: "StringCollection Storage Queue", qos: .default, attributes: [.concurrent])
     
     /// Initialize with the elements and a precalculated string.
     private init(elements: [Element], string: String?) {
