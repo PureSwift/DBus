@@ -57,11 +57,11 @@ public final class DBusConnection {
         
         if shared {
             
-            self.internalPointer = dbus_connection_open(address, error.internalPointer)
+            self.internalPointer = dbus_connection_open(address, &error.internalValue)
             
         } else {
             
-            self.internalPointer = dbus_connection_open_private(address, error.internalPointer)
+            self.internalPointer = dbus_connection_open_private(address, &error.internalValue)
         }
         
         // check for error
@@ -86,11 +86,11 @@ public final class DBusConnection {
         
         if shared {
             
-            self.internalPointer = dbus_bus_get(internalBusType, error.internalPointer)
+            self.internalPointer = dbus_bus_get(internalBusType, &error.internalValue)
             
         } else {
             
-            self.internalPointer = dbus_bus_get_private(internalBusType, error.internalPointer)
+            self.internalPointer = dbus_bus_get_private(internalBusType, &error.internalValue)
         }
         
         // check for error

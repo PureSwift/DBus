@@ -43,6 +43,7 @@ final class SignatureTests: XCTestCase {
             ("(ii)", [.struct([.int32, .int32])]),
             ("(aii)", [.struct([.array(.int32), .int32])]),
             ("ai(i)", [.array(.int32), .struct([.int32])]),
+            ("a(i)", [.array(.struct([.int32]))]),
             ("(ii)(ii)", [.struct([.int32, .int32]), .struct([.int32, .int32])]),
             ("(ii)(ii)(ii)", [.struct([.int32, .int32]), .struct([.int32, .int32]), .struct([.int32, .int32])])
         ]
@@ -56,6 +57,7 @@ final class SignatureTests: XCTestCase {
             XCTAssertEqual(signature.rawValue, string)
             XCTAssertEqual(signature.elements, expectedSignature.elements)
             XCTAssertEqual(Array(signature), Array(expectedSignature))
+            XCTAssertNoThrow(try signature.validate())
         }
     }
 }

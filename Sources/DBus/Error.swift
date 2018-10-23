@@ -66,26 +66,23 @@ internal extension DBusError {
     /// Internal class for working with the C DBus error API
     internal final class Reference {
         
-        typealias InternalPointer = UnsafeMutablePointer<CDBus.DBusError>
-        
         // MARK: - Internal Properties
         
-        let internalPointer: InternalPointer
+        internal var internalValue: CDBus.DBusError
         
         // MARK: - Initialization
         
         deinit {
             
-            dbus_error_free(internalPointer)
+            dbus_error_free(&internalValue)
         }
         
         /// Creates New DBus Error instance.
         init() {
             
-            let internalPointer: InternalPointer! = nil
-            dbus_error_init(internalPointer)
-            
-            self.internalPointer = internalPointer
+            var internalValue = CDBus.DBusError()
+            dbus_error_init(&internalValue)
+            self.internalValue = internalValue
         }
         
         // MARK: - Properties
@@ -95,17 +92,17 @@ internal extension DBusError {
         /// - Returns: `true` if the error is empty or `false` if the error is set.
         var isEmpty: Bool {
             
-            return Bool(dbus_error_is_set(internalPointer)) == false
+            return Bool(dbus_error_is_set(&internalValue)) == false
         }
         
         var name: String {
             
-            return String(cString: internalPointer.pointee.name)
+            return String(cString: internalValue.name)
         }
         
         var message: String {
             
-            return String(cString: internalPointer.pointee.message)
+            return String(cString: internalValue.message)
         }
     }
 }
