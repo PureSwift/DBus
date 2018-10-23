@@ -30,13 +30,13 @@ internal extension DBusSignature {
             string.count <= length.max
             else { return nil }
         
-        var characters = [DBusSignature.Character]()
+        var characters = [Character]()
         characters.reserveCapacity(string.count)
         
         for stringCharacter in string {
             
             // invalid character
-            guard let character = DBusSignature.Character(rawValue: String(stringCharacter))
+            guard let character = Character(rawValue: String(stringCharacter))
                 else { return nil }
             
             characters.append(character)
@@ -45,17 +45,20 @@ internal extension DBusSignature {
         return parse(characters)
     }
     
-    static func parse <C: Collection> (_ characters: C) -> [ValueType]? where C.Element == DBusSignature.Character, C.Index == Int {
-     
+    static func parse(_ characters: [Character]) -> [Element]? {
+        
+        guard characters.isEmpty == false
+            else { return [] }
+        
         var index = 0
         guard let elements = parse(characters, position: &index),
-            index == characters.count - 1 // no trailing characters
+            index == characters.count // no trailing characters
             else { return nil }
         
         return elements
     }
     
-    static func parse <C: Collection> (_ characters: C, position: inout Int) -> [ValueType]? where C.Element == DBusSignature.Character, C.Index == Int {
+    static func parse(_ characters: [Character], position: inout Int) -> [Element]? {
         
         var elements = [Element]()
         
@@ -71,13 +74,15 @@ internal extension DBusSignature {
     }
     
     /// Parse valid DBus characters.
-    private static func parseFirst <C: Collection> (_ characters: C, position: inout Int) -> ValueType? where C.Element == DBusSignature.Character, C.Index == Int {
+    private static func parseFirst(_ characters: [Character], position: inout Int) -> ValueType? {
         
         // get first character
-        guard let character = characters.first
-            else { return nil }
+        let character = characters[position]
         
         position += 1
+        
+        let charactersLeft = characters.count - position
+        assert(charactersLeft >= 0)
         
         switch character {
             
@@ -100,20 +105,35 @@ internal extension DBusSignature {
         // container types
         case .array:
             
-            guard characters.count > 1,
-                let valueType = parseFirst(characters.suffix(from: 1), position: &position)
+            guard charactersLeft >= 1,
+                let valueType = parseFirst(characters, position: &position)
                 else { return nil }
             
             return .array(valueType)
             
         case .structStart:
             
-            guard characters.count > 2,
-                let subtypes = parse(characters[1 ..< characters.count - 1], position: &position),
-                let structureType = StructureType(subtypes)
+            guard charactersLeft >= 2
+                else { return nil }
+            
+            var elements = [Element]()
+            
+            while position < characters.count, characters[position] != .structEnd  {
+                
+                guard let element = parseFirst(characters, position: &position)
+                    else { return nil }
+                
+                elements.append(element)
+            }
+            
+            guard position < characters.count,
+                characters[position] == .structEnd
                 else { return nil }
             
             position += 1
+            
+            guard let structureType = StructureType(elements)
+                else { return nil }
             
             return .struct(structureType)
             

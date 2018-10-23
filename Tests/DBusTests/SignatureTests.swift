@@ -25,7 +25,8 @@ final class SignatureTests: XCTestCase {
             "ii)",
             "()",
             "a",
-            "test"
+            "test",
+            "(ii)(ii) (ii)"
         ]
         
         strings.forEach { XCTAssertNil(DBusSignature(rawValue: $0)) }
@@ -34,10 +35,16 @@ final class SignatureTests: XCTestCase {
     func testValid() {
         
         let values: [(String, DBusSignature)] = [
+            ("s", [.string]),
             ("i", [.int32]),
             ("ii", [.int32, .int32]),
             ("aiai", [.array(.int32), .array(.int32)]),
-            ("(ii)(ii)", [.struct([.int32]), .struct([.int32])])
+            ("(i)", [.struct([.int32])]),
+            ("(ii)", [.struct([.int32, .int32])]),
+            ("(aii)", [.struct([.array(.int32), .int32])]),
+            ("ai(i)", [.array(.int32), .struct([.int32])]),
+            ("(ii)(ii)", [.struct([.int32, .int32]), .struct([.int32, .int32])]),
+            ("(ii)(ii)(ii)", [.struct([.int32, .int32]), .struct([.int32, .int32]), .struct([.int32, .int32])])
         ]
         
         for (string, expectedSignature) in values {
@@ -48,6 +55,7 @@ final class SignatureTests: XCTestCase {
             XCTAssertEqual(signature, expectedSignature)
             XCTAssertEqual(signature.rawValue, string)
             XCTAssertEqual(signature.elements, expectedSignature.elements)
+            XCTAssertEqual(Array(signature), Array(expectedSignature))
         }
     }
 }
