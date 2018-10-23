@@ -21,11 +21,10 @@ public struct DBusSignature {
 
 internal extension DBusSignature {
     
-    func validate() throws {
+    static func validate(_ string: String) throws {
         
         let error = DBusError.Reference()
-        
-        guard Bool(dbus_signature_validate(rawValue, &error.internalValue))
+        guard Bool(dbus_signature_validate(string, &error.internalValue))
             else { throw DBusError(error)! }
         
     }
@@ -33,7 +32,7 @@ internal extension DBusSignature {
 
 internal extension DBusSignature {
     
-    static let length = (min: 1, max: 255)
+    static let length = (min: 0, max: 255)
     
     /// Parse the DBus signature string.
     static func parse(_ string: String) -> [ValueType]? {

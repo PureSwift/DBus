@@ -19,7 +19,6 @@ final class SignatureTests: XCTestCase {
     func testInvalid() {
         
         let strings = [
-            "",
             "aa",
             "(ii",
             "ii)",
@@ -29,12 +28,16 @@ final class SignatureTests: XCTestCase {
             "(ii)(ii) (ii)"
         ]
         
-        strings.forEach { XCTAssertNil(DBusSignature(rawValue: $0)) }
+        try! strings.forEach {
+            XCTAssertNil(DBusSignature(rawValue: $0))
+            XCTAssertThrowsError(try DBusSignature.validate($0))
+        }
     }
     
     func testValid() {
         
         let values: [(String, DBusSignature)] = [
+            ("", []),
             ("s", [.string]),
             ("i", [.int32]),
             ("ii", [.int32, .int32]),
@@ -57,7 +60,7 @@ final class SignatureTests: XCTestCase {
             XCTAssertEqual(signature.rawValue, string)
             XCTAssertEqual(signature.elements, expectedSignature.elements)
             XCTAssertEqual(Array(signature), Array(expectedSignature))
-            XCTAssertNoThrow(try signature.validate())
+            XCTAssertNoThrow(try DBusSignature.validate(string))
         }
     }
 }
