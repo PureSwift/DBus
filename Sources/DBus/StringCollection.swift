@@ -7,77 +7,30 @@
 
 import Foundation
 
+internal protocol StringCollectionElement: Equatable {
+    
+    static func parse(_ string: String) -> [Self]?
+    
+    static func string(for elements: [Self]) -> String
+}
+
 /// Internal Collection object that has a string representation
-internal protocol StringCollectionReference: CopyableReference {
+internal final class StringCollection <Element: StringCollectionElement> : CopyableReference {
     
-    associatedtype Element
-    
-    /// Initialize with the elements and a precalculated string.
-    init(elements: [Element], string: String?)
-    
-    /// The underlying elements array
-    var elements: [Element] { get set }
-    
-    var queue: DispatchQueue { get }
-    
-    func buildString() -> String
-    
-    static func parse(_ string: String) -> [Element]?
-}
-
-extension StringCollectionReference {
-    
-    /// Initialize with a string.
-    init?(string: String) {
-        
-        guard let elements = Self.parse(string)
-            else { return nil }
-        
-        self.init(elements: elements, string: string)
-    }
-    
-    /// Initialize with the elements.
-    init(elements: [Element] = []) {
-        
-        self.init(elements: elements, string: nil)
-    }
-    
-    subscript (index: Int) -> Element {
-        
-        get { return queue.sync { [unowned self] in self.elements[index] } }
-        
-        set {
-            
-            queue.sync(flags: [.barrier]) { [unowned self] in
-                
-                // set new value
-                self.elements[index] = newValue
-                
-                // reset cache
-                self.resetStringCache()
-            }
-        }
-    }
-}
-
-/// Internal cache
-final class Reference: CopyableReference {
-    
-    /// Default value (`/`)
-    internal static let `default` = Reference()
-    
-    /// Parsed elements. Always initialized to this value.
+    /// The underlying elements array.
     private var elements: [Element]
     
-    private let queue = DispatchQueue(label: "DBusObjectPath Storage Queue", qos: .default, attributes: [.concurrent])
+    /// Access queue for thread safety
+    private let queue = DispatchQueue(label: "StringCollectionReference Storage Queue", qos: .default, attributes: [.concurrent])
     
-    /// initialize with the elements
+    /// Initialize with the elements and a precalculated string.
     private init(elements: [Element], string: String?) {
         
         self.elements = elements
         self.stringCache = string
     }
     
+    /// Initialize with the elements.
     internal convenience init(elements: [Element] = []) {
         
         self.init(elements: elements, string: nil)
@@ -86,13 +39,13 @@ final class Reference: CopyableReference {
     /// Initialize with a string.
     internal convenience init?(string: String) {
         
-        guard let elements = DBusObjectPath.parse(string)
+        guard let elements = Element.parse(string)
             else { return nil }
         
         self.init(elements: elements, string: string)
     }
     
-    internal fileprivate(set) subscript (index: Int) -> Element {
+    internal subscript (index: Int) -> Element {
         
         @inline(__always)
         get { return queue.sync { [unowned self] in self.elements[index] } }
@@ -119,15 +72,9 @@ final class Reference: CopyableReference {
     internal var lazyStringBuild: UInt = 0
     #endif
     
-    /// Resets and clears the string cache.
-    ///
-    /// - Note: This should only be neccesary for unique references that are reused upon mutation.
-    ///
-    /// - Precondition: Only call from access queue blocks.
-    @inline(__always)
-    private func resetStringCache() {
+    internal var copy: StringCollection<Element> {
         
-        self.stringCache = nil
+        return queue.sync { [unowned self] in StringCollection<Element>(elements: self.elements) }
     }
     
     /// Whether the string value is internally cached
@@ -135,12 +82,7 @@ final class Reference: CopyableReference {
         
         return queue.sync { [unowned self] in self.stringCache != nil }
     }
-    
-    internal var copy: Reference {
         
-        return queue.sync { [unowned self] in Reference(elements: self.elements) }
-    }
-    
     /// lazily initialize string value
     internal var string: String {
         
@@ -149,7 +91,7 @@ final class Reference: CopyableReference {
             return queue.sync(flags: [.barrier]) { [unowned self] in
                 
                 // lazily initialize
-                let stringValue = String(self.elements)
+                let stringValue = Element.string(for: self.elements)
                 
                 // cache value
                 self.stringCache = stringValue
@@ -166,13 +108,24 @@ final class Reference: CopyableReference {
         return cache
     }
     
+    /// Resets and clears the string cache.
+    ///
+    /// - Note: This should only be neccesary for unique references that are reused upon mutation.
+    ///
+    /// - Precondition: Only call from access queue blocks.
+    @inline(__always)
+    private func resetStringCache() {
+        
+        self.stringCache = nil
+    }
+    
     internal var count: Int {
         
         return queue.sync { [unowned self] in self.elements.count }
     }
     
     /// Compare equality and identity
-    internal func isEqual(to other: Reference) -> Bool {
+    internal func isEqual(to other: StringCollection<Element>) -> Bool {
         
         // fast path for same instance
         guard self !== other else { return true }
@@ -184,9 +137,9 @@ final class Reference: CopyableReference {
         return lhsElements == rhsElements
     }
     
-    /// Adds a new element at the end of the object path.
+    /// Adds a new element at the end of the collection.
     ///
-    /// Use this method to append a single element to the end of a mutable object path.
+    /// Use this method to append a single element to the end of a mutable collection.
     internal func append(_ element: Element) {
         
         queue.sync(flags: [.barrier]) { [unowned self] in
@@ -199,9 +152,9 @@ final class Reference: CopyableReference {
         }
     }
     
-    /// Removes and returns the last element of the object path.
+    /// Removes and returns the last element of the collection.
     ///
-    /// - Precondition: The object path must not be empty.
+    /// - Precondition: The collection must not be empty.
     internal func removeLast() -> Element {
         
         return queue.sync(flags: [.barrier]) { [unowned self] in
@@ -214,9 +167,9 @@ final class Reference: CopyableReference {
         }
     }
     
-    /// Removes and returns the first element of the object path.
+    /// Removes and returns the first element of the collection.
     ///
-    /// - Precondition: The object path must not be empty.
+    /// - Precondition: The collection must not be empty.
     internal func removeFirst() -> Element {
         
         return queue.sync(flags: [.barrier]) { [unowned self] in
