@@ -19,6 +19,110 @@ public struct DBusSignature {
     }
 }
 
+internal extension DBusSignature {
+    
+    static let length = (min: 1, max: 255)
+    
+    /// Parse the DBus signature string.
+    static func parse(_ string: String) -> [ValueType]? {
+        
+        guard string.count >= length.min,
+            string.count <= length.max
+            else { return nil }
+        
+        var characters = [DBusSignature.Character]()
+        characters.reserveCapacity(string.count)
+        
+        for stringCharacter in string {
+            
+            // invalid character
+            guard let character = DBusSignature.Character(rawValue: String(stringCharacter))
+                else { return nil }
+            
+            characters.append(character)
+        }
+        
+        return parse(characters)
+    }
+    
+    static func parse <C: Collection> (_ characters: C) -> [ValueType]? where C.Element == DBusSignature.Character, C.Index == Int {
+     
+        var index = 0
+        guard let elements = parse(characters, position: &index),
+            index == characters.count - 1 // no trailing characters
+            else { return nil }
+        
+        return elements
+    }
+    
+    static func parse <C: Collection> (_ characters: C, position: inout Int) -> [ValueType]? where C.Element == DBusSignature.Character, C.Index == Int {
+        
+        var elements = [Element]()
+        
+        while position < characters.count {
+            
+            guard let element = parseFirst(characters, position: &position)
+                else { return nil }
+            
+            elements.append(element)
+        }
+        
+        return elements
+    }
+    
+    /// Parse valid DBus characters.
+    private static func parseFirst <C: Collection> (_ characters: C, position: inout Int) -> ValueType? where C.Element == DBusSignature.Character, C.Index == Int {
+        
+        // get first character
+        guard let character = characters.first
+            else { return nil }
+        
+        position += 1
+        
+        switch character {
+            
+        // simple / single letter types
+        case .byte: return .byte
+        case .boolean: return .boolean
+        case .int16: return .int16
+        case .int32: return .int32
+        case .int64: return .int64
+        case .uint16: return .uint16
+        case .uint32: return .uint32
+        case .uint64: return .uint64
+        case .double: return .double
+        case .fileDescriptor: return .fileDescriptor
+        case .string: return .string
+        case .objectPath: return .objectPath
+        case .signature: return .signature
+        case .variant: return .variant
+        
+        // container types
+        case .array:
+            
+            guard characters.count > 1,
+                let valueType = parseFirst(characters.suffix(from: 1), position: &position)
+                else { return nil }
+            
+            return .array(valueType)
+            
+        case .structStart:
+            
+            guard characters.count > 2,
+                let subtypes = parse(characters[1 ..< characters.count - 1], position: &position),
+                let structureType = StructureType(subtypes)
+                else { return nil }
+            
+            position += 1
+            
+            return .struct(structureType)
+            
+        default:
+            return nil
+        }
+    }
+}
+
 extension DBusSignature: Equatable {
     
     public static func == (lhs: DBusSignature, rhs: DBusSignature) -> Bool {
@@ -47,7 +151,10 @@ extension DBusSignature: RawRepresentable {
     
     public init?(rawValue: String) {
         
-        fatalError()
+        guard let elements = DBusSignature.parse(rawValue)
+            else { return nil }
+        
+        self.init(elements)
     }
     
     public var rawValue: String {
@@ -55,6 +162,90 @@ extension DBusSignature: RawRepresentable {
         return String(self.elements)
     }
 }
+
+extension DBusSignature: ExpressibleByArrayLiteral {
+    
+    public init(arrayLiteral elements: Element...) {
+        
+        self.init(elements)
+    }
+}
+
+// MARK: Collection
+
+extension DBusSignature: MutableCollection {
+    
+    public typealias Element = ValueType
+    
+    public typealias Index = Int
+    
+    public subscript (index: Index) -> Element {
+        
+        get { return elements[index] }
+        
+        mutating set { elements[index] = newValue }
+    }
+    
+    public var count: Int {
+        
+        return elements.count
+    }
+    
+    /// The start `Index`.
+    public var startIndex: Index {
+        return 0
+    }
+    
+    /// The end `Index`.
+    ///
+    /// This is the "one-past-the-end" position, and will always be equal to the `count`.
+    public var endIndex: Index {
+        return count
+    }
+    
+    public func index(before i: Index) -> Index {
+        return i - 1
+    }
+    
+    public func index(after i: Index) -> Index {
+        return i + 1
+    }
+    
+    public func makeIterator() -> IndexingIterator<DBusSignature> {
+        return IndexingIterator(_elements: self)
+    }
+    
+    public mutating func append(_ element: Element) {
+        
+        elements.append(element)
+    }
+    
+    @discardableResult
+    public mutating func removeFirst() -> Element {
+        
+        return elements.removeFirst()
+    }
+    
+    @discardableResult
+    public mutating func removeLast() -> Element {
+        
+        return elements.removeLast()
+    }
+    
+    @discardableResult
+    public mutating func remove(at index: Int) -> Element {
+        
+        return elements.remove(at: index)
+    }
+    
+    /// Removes all elements from the object path.
+    public mutating func removeAll(keepingCapacity: Bool = false) {
+        
+        self.elements.removeAll(keepingCapacity: keepingCapacity)
+    }
+}
+
+extension DBusSignature: RandomAccessCollection { }
 
 public extension DBusSignature {
     
@@ -126,29 +317,6 @@ public extension DBusSignature {
         
         /// Variant type (the type of the value is part of the value itself)
         case variant
-    }
-}
-
-internal extension DBusSignature.ValueType {
-    
-    static func parse(_ string: String) -> DBusSignature.ValueType? {
-        
-        var characters = [DBusSignature.Character]()
-        characters.reserveCapacity(string.count)
-        
-        for stringCharacter in string {
-            
-            // invalid character
-            guard let character = DBusSignature.Character(rawValue: String(stringCharacter))
-                else { return nil }
-            
-            characters.append(character)
-        }
-        
-        guard let valueType = DBusSignature.ValueType(characters)
-            else { return nil }
-        
-        return valueType
     }
 }
 
@@ -255,53 +423,6 @@ public extension DBusSignature {
 
 public extension DBusSignature.ValueType {
     
-    init?(_ characters: [DBusSignature.Character]) {
-        
-        guard let character = characters.first
-            else { return nil }
-        
-        switch character {
-            
-        // simple / single letter types
-        case .byte: self = .byte
-        case .boolean: self = .boolean
-        case .int16: self = .int16
-        case .int32: self = .int32
-        case .int64: self = .int64
-        case .uint16: self = .uint16
-        case .uint32: self = .uint32
-        case .uint64: self = .uint64
-        case .double: self = .double
-        case .fileDescriptor: self = .fileDescriptor
-        case .string: self = .string
-        case .objectPath: self = .objectPath
-        case .signature: self = .signature
-        case .variant: self = .variant
-        
-        // container types
-        case .array:
-            
-            guard characters.count > 1,
-                let valueType = DBusSignature.ValueType(Array(characters.suffix(from: 1)))
-                else { return nil }
-            
-            self = .array(valueType)
-            
-        //case .dictionary: fatalError("Confused")
-            
-        case .structStart:
-            
-            guard characters.count > 2,
-                let structureType = DBusSignature.StructureType(characters)
-                else { return nil }
-            
-            self = .struct(structureType)
-            
-        default:
-            return nil
-        }
-    }
-    
     var characters: [DBusSignature.Character] {
         
         switch self {
@@ -378,6 +499,14 @@ extension DBusSignature.StructureType: RawRepresentable {
     public var rawValue: String {
         
         return String(self.elements)
+    }
+}
+
+extension DBusSignature.StructureType: ExpressibleByArrayLiteral {
+    
+    public init(arrayLiteral elements: Element...) {
+        
+        self.init(elements)!
     }
 }
 
