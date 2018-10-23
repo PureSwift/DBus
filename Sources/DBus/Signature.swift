@@ -21,6 +21,8 @@ public struct DBusSignature {
 
 internal extension DBusSignature {
     
+    static let length = (min: 0, max: 255)
+    
     static func validate(_ string: String) throws {
         
         let error = DBusError.Reference()
@@ -28,11 +30,6 @@ internal extension DBusSignature {
             else { throw DBusError(error)! }
         
     }
-}
-
-internal extension DBusSignature {
-    
-    static let length = (min: 0, max: 255)
     
     /// Parse the DBus signature string.
     static func parse(_ string: String) -> [ValueType]? {
@@ -40,6 +37,10 @@ internal extension DBusSignature {
         guard string.count >= length.min,
             string.count <= length.max
             else { return nil }
+        
+        // validate with C library first
+        do { try validate(string) }
+        catch { return nil }
         
         var characters = [Character]()
         characters.reserveCapacity(string.count)
@@ -116,11 +117,44 @@ internal extension DBusSignature {
         // container types
         case .array:
             
-            guard charactersLeft >= 1,
-                let valueType = parseFirst(characters, position: &position)
+            guard charactersLeft >= 1
                 else { return nil }
             
-            return .array(valueType)
+            if characters[position] == .dictionaryEntryStart {
+                
+                position += 1
+                
+                var elements = [Element]()
+                
+                while position < characters.count, characters[position] != .dictionaryEntryEnd  {
+                    
+                    guard let element = parseFirst(characters, position: &position)
+                        else { return nil }
+                    
+                    elements.append(element)
+                }
+                
+                guard elements.count == 2
+                    else { return nil }
+                
+                guard position < characters.count,
+                    characters[position] == .dictionaryEntryEnd
+                    else { return nil }
+                
+                guard let dictionary = DictionaryType(key: elements[0], value: elements[1])
+                    else { return nil }
+                
+                position += 1
+                
+                return .dictionary(dictionary)
+                
+            } else {
+                
+                guard let valueType = parseFirst(characters, position: &position)
+                    else { return nil }
+                
+                return .array(valueType)
+            }
             
         case .structStart:
             
@@ -316,6 +350,9 @@ public extension DBusSignature {
         /// Unsigned 32-bit integer representing an index into an out-of-band array of file descriptors, transferred via some platform-specific mechanism
         case fileDescriptor
         
+        /// Variant type (the type of the value is part of the value itself)
+        case variant
+        
         // String-like types
         
         /// String
@@ -344,10 +381,22 @@ public extension DBusSignature {
         case array(ValueType)
         
         /// Dictionary
-        case dictionary(ValueType)
+        case dictionary(DictionaryType)
+    }
+}
+
+public extension DBusSignature.ValueType {
+    
+    public var isContainer: Bool {
         
-        /// Variant type (the type of the value is part of the value itself)
-        case variant
+        switch self {
+        case .struct,
+             .array,
+             .dictionary:
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -472,8 +521,8 @@ public extension DBusSignature.ValueType {
         case .signature: return [.signature]
         case .variant: return [.variant]
         case let .array(type): return [.array] + type.characters
-        case let .struct(type): return [.structStart] + type.elements.reduce([], { $0 + $1.characters }) + [.structEnd]
-        case let .dictionary(type): return [.dictionaryEntryStart] + type.characters + [.dictionaryEntryEnd]
+        case let .struct(structureType): return structureType.characters
+        case let .dictionary(dictionary): return dictionary.characters
         }
     }
 }
@@ -493,6 +542,51 @@ public extension String {
         self = signature.reduce("", { $0 + $1.rawValue })
     }
 }
+
+// MARK: - DictionaryType
+
+public extension DBusSignature {
+    
+    public struct DictionaryType: Equatable {
+        
+        public let key: ValueType
+        
+        public let value: ValueType
+        
+        public init?(key: ValueType,
+                    value: ValueType) {
+            
+            guard key.isContainer == false
+                else { return nil }
+            
+            self.key = key
+            self.value = value
+        }
+    }
+}
+
+public extension DBusSignature.DictionaryType {
+    
+    var characters: [DBusSignature.Character] {
+        
+        return [.array, .dictionaryEntryStart] + key.characters + value.characters + [.dictionaryEntryEnd]
+    }
+}
+
+extension DBusSignature.DictionaryType: RawRepresentable {
+    
+    public init?(rawValue: String) {
+        
+        fatalError()
+    }
+    
+    public var rawValue: String {
+        
+        return String(characters)
+    }
+}
+
+// MARK: - StructureType
 
 public extension DBusSignature {
     
@@ -520,6 +614,14 @@ extension DBusSignature.StructureType: Equatable {
     }
 }
 
+public extension DBusSignature.StructureType {
+    
+    public var characters: [DBusSignature.Character] {
+        
+        return [.structStart] + elements.reduce([], { $0 + $1.characters }) + [.structEnd]
+    }
+}
+
 extension DBusSignature.StructureType: RawRepresentable {
     
     public init?(rawValue: String) {
@@ -529,7 +631,7 @@ extension DBusSignature.StructureType: RawRepresentable {
     
     public var rawValue: String {
         
-        return String(self.elements)
+        return String(characters)
     }
 }
 
@@ -537,7 +639,10 @@ extension DBusSignature.StructureType: ExpressibleByArrayLiteral {
     
     public init(arrayLiteral elements: Element...) {
         
-        self.init(elements)!
+        guard let structureType = DBusSignature.StructureType(elements)
+            else { fatalError("Invalid array literal \(elements)") }
+        
+        self = structureType
     }
 }
 
