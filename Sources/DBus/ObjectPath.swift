@@ -267,18 +267,3 @@ extension DBusObjectPath.Element: Hashable {
         return rawValue.hashValue
     }
 }
-
-// MARK: - StringCollectionElement
-
-extension DBusObjectPath.Element: StringCollectionElement {
-    
-    static func parse(_ string: String) -> [DBusObjectPath.Element]? {
-        
-        return DBusObjectPath.parse(string)
-    }
-    
-    static func string(for elements: [DBusObjectPath.Element]) -> String {
-        
-        return String(elements)
-    }
-}
