@@ -62,7 +62,7 @@ internal extension DBusInterface {
             string.contains(separator)
             else { return nil }
         
-        let pathStrings = string.split(separator: DBusInterface.separator,
+        let pathStrings = string.split(separator: separator,
                                        maxSplits: .max,
                                        omittingEmptySubsequences: false)
         
@@ -190,30 +190,6 @@ extension DBusInterface: MutableCollection {
     public mutating func append(_ element: Element) {
         
         elements.append(element)
-    }
-    
-    @discardableResult
-    public mutating func removeFirst() -> Element {
-        
-        return elements.removeFirst()
-    }
-    
-    @discardableResult
-    public mutating func removeLast() -> Element {
-        
-        return elements.removeLast()
-    }
-    
-    @discardableResult
-    public mutating func remove(at index: Int) -> Element {
-        
-        return elements.remove(at: index)
-    }
-    
-    /// Removes all elements from the object path.
-    public mutating func removeAll(keepingCapacity: Bool = false) {
-        
-        self.elements.removeAll(keepingCapacity: keepingCapacity)
     }
 }
 
