@@ -18,47 +18,6 @@ public struct DBusError: Error {
     public let message: String
 }
 
-public extension DBusError {
-    
-    public struct Name: RawRepresentable {
-        
-        public let rawValue: String
-        
-        public init(rawValue: String) {
-            
-            self.rawValue = rawValue
-        }
-    }
-}
-
-public extension DBusError.Name {
-    
-    /// A generic error; "something went wrong" - see the error message for more.
-    public static let failed: DBusError.Name = "org.freedesktop.DBus.Error.Failed"
-    
-    /// Existing file and the operation you're using does not silently overwrite.
-    public static let fileExists: DBusError.Name = "org.freedesktop.DBus.Error.FileExists"
-    
-    /// Missing file.
-    public static let fileNotFound: DBusError.Name = "org.freedesktop.DBus.Error.FileNotFound"
-}
-
-extension DBusError.Name: ExpressibleByStringLiteral {
-    
-    public init(stringLiteral value: String) {
-        
-        self.init(rawValue: value)
-    }
-}
-
-extension DBusError.Name: CustomStringConvertible {
-    
-    public var description: String {
-        
-        return rawValue
-    }
-}
-
 // MARK: - Internal
 
 internal extension DBusError {
@@ -114,7 +73,88 @@ internal extension DBusError {
         guard reference.isEmpty == false
             else { return nil }
         
-        self.init(name: DBusError.Name(rawValue: reference.name),
+        guard let name = DBusError.Name(rawValue: reference.name)
+            else { fatalError("Invalid error \(reference.name)") }
+        
+        self.init(name: name,
                   message: reference.message)
+    }
+}
+
+// MARK: Error Name
+
+public extension DBusError {
+    
+    public struct Name {
+        
+        public let rawValue: String
+        
+        /// Cached parsed interface
+        internal let interface: DBusInterface
+        
+        public init?(rawValue: String) {
+            
+            guard let interface = DBusInterface(rawValue: rawValue)
+                else { return nil }
+            
+            self.rawValue = rawValue
+            self.interface = interface
+        }
+        
+        public init(_ interface: DBusInterface) {
+            
+            self.interface = interface
+            self.rawValue = interface.rawValue
+        }
+    }
+}
+
+public extension DBusInterface {
+    
+    init(_ error: DBusError.Name) {
+        
+        self = error.interface
+    }
+}
+
+public extension DBusError.Name {
+    
+    /// A generic error; "something went wrong" - see the error message for more.
+    public static let failed = DBusError.Name(rawValue: "org.freedesktop.DBus.Error.Failed")!
+    
+    /// Existing file and the operation you're using does not silently overwrite.
+    public static let fileExists = DBusError.Name(rawValue: "org.freedesktop.DBus.Error.FileExists")!
+    
+    /// Missing file.
+    public static let fileNotFound = DBusError.Name(rawValue: "org.freedesktop.DBus.Error.FileNotFound")!
+    
+    /// Invalid arguments
+    public static let invalidArguments = DBusError.Name(rawValue: "org.freedesktop.DBus.Error.InvalidArgs")!
+    
+    /// Invalid signature
+    public static let invalidSignature = DBusError.Name(rawValue: "org.freedesktop.DBus.Error.InvalidSignature")!
+}
+
+extension DBusError.Name: Equatable {
+    
+    public static func == (lhs: DBusError.Name, rhs: DBusError.Name) -> Bool {
+        
+        return lhs.rawValue == rhs.rawValue
+    }
+}
+
+extension DBusError.Name: Hashable {
+    
+    public var hashValue: Int {
+        
+        return rawValue.hashValue
+    }
+}
+
+extension DBusError.Name: CustomStringConvertible {
+    
+    public var description: String {
+        
+        return rawValue
     }
 }

@@ -30,7 +30,8 @@ final class InterfaceTests: XCTestCase {
             "..",
             "com",
             "com.",
-            "a."
+            "a.",
+            "a.ñ"
         ]
         
         strings.forEach {
@@ -45,8 +46,8 @@ final class InterfaceTests: XCTestCase {
         
         let values = [
             ("a.b", ["a", "b"]),
-            ("com.example.Music1", ["com", "example", "Music1"]),
             ("com.example", ["com", "example"]),
+            ("com.example.MusicPlayer1", ["com", "example", "MusicPlayer1"]),
             ("com.example.MusicPlayer1.Track", ["com", "example", "MusicPlayer1", "Track"])
         ]
         
@@ -59,6 +60,7 @@ final class InterfaceTests: XCTestCase {
             
             XCTAssertEqual(interface.rawValue, string)
             XCTAssertEqual(interface.elements.map { $0.rawValue }, elements)
+            XCTAssertEqual(Array(interface), interface.elements)
         }
     }
 }
