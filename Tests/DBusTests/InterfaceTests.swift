@@ -79,6 +79,7 @@ final class InterfaceTests: XCTestCase {
             XCTAssertEqual(Array(interface), interface.elements)
             XCTAssert(interface.count > 1)
             XCTAssertEqual(interface, DBusInterface(interface.elements))
+            XCTAssertEqual(interface.hashValue, string.hashValue)
             
             // mutate
             var mutable = interface
@@ -87,6 +88,9 @@ final class InterfaceTests: XCTestCase {
             XCTAssertNotEqual(mutable, interface)
             XCTAssertNotEqual(mutable.rawValue, interface.rawValue)
             XCTAssertNotEqual(mutable.elements, interface.elements)
+            XCTAssertNotEqual(mutable.hashValue, interface.hashValue)
+            XCTAssertNotEqual(mutable.hashValue, interface.hashValue)
+            XCTAssertNotEqual(mutable.last?.hashValue, interface.last?.hashValue)
         }
     }
 }

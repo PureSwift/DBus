@@ -55,6 +55,7 @@ final class ObjectPathTests: XCTestCase {
             XCTAssertEqual(objectPath.map { $0.rawValue }, elements, "Invalid elements")
             XCTAssertEqual(objectPath.rawValue, string)
             XCTAssertEqual(objectPath.description, string)
+            XCTAssertEqual(objectPath.hashValue, string.hashValue)
             
             // test collection / subscripting
             XCTAssertEqual(objectPath.count, elements.count)
@@ -65,6 +66,7 @@ final class ObjectPathTests: XCTestCase {
             let elementsObjectPath = DBusObjectPath(elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
             XCTAssertEqual(elementsObjectPath.map { $0.rawValue }, elements)
             XCTAssertEqual(Array(elementsObjectPath), elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
+            XCTAssertEqual(elementsObjectPath, objectPath)
             
             // test equality
             XCTAssertEqual(objectPath, objectPath)
