@@ -15,6 +15,10 @@ public struct DBusObjectPath {
     
     /// Cached string.
     /// This will be the original string the object path was created from.
+    ///
+    /// - Note: Any subsequent mutation will set this value to nil, and `rawValue` and `description` getters
+    /// will have to rebuild the string for every invocation. So mutating leads to the unoptimized code path,
+    /// but for values created from either a string or an array of elements, this value is cached.
     internal private(set) var string: String?
     
     /// Initialize with an array of elements.
@@ -236,9 +240,11 @@ public extension DBusObjectPath {
     /// An element in the object path
     public struct Element {
         
-        /// Don't copy buffer of individual elements.
+        /// Don't copy buffer of individual elements, because these elements will always be created
+        /// from a bigger string, which we should just internally reference.
         internal let substring: Substring
         
+        /// Designated initializer.
         internal init?(substring: Substring) {
             
             // validate string
@@ -256,8 +262,8 @@ extension DBusObjectPath.Element: RawRepresentable {
     
     public init?(rawValue: String) {
         
+        // This API will rarely be used
         let substring = Substring(rawValue)
-        
         self.init(substring: substring)
     }
     
@@ -276,7 +282,7 @@ extension DBusObjectPath.Element: Equatable {
     
     public static func == (lhs: DBusObjectPath.Element, rhs: DBusObjectPath.Element) -> Bool {
         
-        return lhs.rawValue == rhs.rawValue
+        return lhs.substring == rhs.substring
     }
 }
 
@@ -292,6 +298,6 @@ extension DBusObjectPath.Element: Hashable {
     
     public var hashValue: Int {
         
-        return rawValue.hashValue
+        return substring.hashValue
     }
 }
