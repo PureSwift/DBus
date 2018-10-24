@@ -212,7 +212,7 @@ public extension DBusInterface {
             // validate string
             guard substring.isEmpty == false, // No element may be an empty string.
                 substring.contains(DBusInterface.separator) == false, // Multiple '.' characters cannot occur in sequence.
-                substring.rangeOfCharacter(from: Element.nonASCIICharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
+                substring.rangeOfCharacter(from: Element.invalidCharacters) == nil // check for invalid characters
                 else { return nil }
             
             // store validated string
@@ -238,7 +238,8 @@ extension DBusInterface.Element: RawRepresentable {
 
 private extension DBusInterface.Element {
     
-    static let nonASCIICharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ0123456789").inverted
+    /// only ASCII characters "[A-Z][a-z][0-9]_"
+    static let invalidCharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ0123456789_").inverted
 }
 
 extension DBusInterface.Element: Equatable {

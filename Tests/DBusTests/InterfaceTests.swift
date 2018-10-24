@@ -19,6 +19,7 @@ final class InterfaceTests: XCTestCase {
     func testInvalid() {
         
         let strings = [
+            "org.7-zip.Plugin",
             "com.example..MusicPlayer1.Track",
             "com.example.MusicPlayer1.Track.",
             "com.example.",
@@ -56,6 +57,7 @@ final class InterfaceTests: XCTestCase {
     func testValid() {
         
         let values = [
+            ("org._7_zip.Plugin", ["org", "_7_zip", "Plugin"]),
             ("a.b", ["a", "b"]),
             ("com.example", ["com", "example"]),
             ("com.example.MusicPlayer1", ["com", "example", "MusicPlayer1"]),
