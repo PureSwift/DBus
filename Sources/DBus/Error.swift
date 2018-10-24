@@ -6,6 +6,7 @@
 //  Copyright © 2016 PureSwift. All rights reserved.
 //
 
+import Foundation
 import CDBus
 
 /// DBus type representing an exception.
@@ -18,7 +19,7 @@ public struct DBusError: Error {
     public let message: String
 }
 
-// MARK: - Internal
+// MARK: - Internal Reference
 
 internal extension DBusError {
     
@@ -81,6 +82,39 @@ internal extension DBusError {
     }
 }
 
+// MARK: CustomNSError
+
+#if os(macOS)
+
+extension DBusError: CustomNSError {
+    
+    public enum UserInfoKey: String {
+        
+        /// DBus error name
+        case name
+    }
+    
+    /// The domain of the error.
+    public static let errorDomain = "org.freedesktop.DBus.Error"
+    
+    /// The error code within the given domain.
+    public var errorCode: Int {
+        
+        return name.hashValue
+    }
+    
+    /// The user-info dictionary.
+    public var errorUserInfo: [String: Any] {
+        
+        return [
+            UserInfoKey.name.rawValue: self.name.rawValue,
+            NSLocalizedDescriptionKey: self.message
+        ]
+    }
+}
+
+#endif
+
 // MARK: Error Name
 
 public extension DBusError {
@@ -89,23 +123,23 @@ public extension DBusError {
         
         public let rawValue: String
         
-        /// Cached parsed interface
-        internal let interface: DBusInterface
-        
         public init?(rawValue: String) {
             
-            guard let interface = DBusInterface(rawValue: rawValue)
-                else { return nil }
+            // validate from C, no parsing
+            do { try DBusInterface.validate(rawValue) }
+            catch { return nil }
             
             self.rawValue = rawValue
-            self.interface = interface
         }
+    }
+}
+
+public extension DBusError.Name {
+    
+    public init(_ interface: DBusInterface) {
         
-        public init(_ interface: DBusInterface) {
-            
-            self.interface = interface
-            self.rawValue = interface.rawValue
-        }
+        // should be valid
+        self.rawValue = interface.rawValue
     }
 }
 
@@ -113,7 +147,7 @@ public extension DBusInterface {
     
     init(_ error: DBusError.Name) {
         
-        self = error.interface
+        self.init(rawValue: error.rawValue)!
     }
 }
 

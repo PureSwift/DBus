@@ -34,11 +34,16 @@ final class SignatureTests: XCTestCase {
             "a{vs}"
         ]
         
-        strings.forEach {
-            XCTAssertNil(DBusSignature(rawValue: $0))
-            do { try DBusSignature.validate($0) }
-            catch { print(error); return }
-            XCTFail("\($0) should be invalid and throw error")
+        for string in strings {
+            
+            XCTAssertNil(DBusSignature(rawValue: string), "\(string) should be invalid")
+            do { try DBusSignature.validate(string) }
+            catch let error as DBusError {
+                XCTAssertEqual(error.name, .invalidSignature)
+                print(string, error); return
+            }
+            catch { XCTFail("\(error)"); return }
+            XCTFail("Error expected for \(string)")
         }
     }
     

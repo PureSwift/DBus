@@ -85,8 +85,10 @@ final class ObjectPathTests: XCTestCase {
         XCTAssertEqual(DBusObjectPath(), DBusObjectPath(rawValue: "/"))
         XCTAssertEqual(DBusObjectPath(), DBusObjectPath())
         XCTAssertNotEqual(DBusObjectPath(), DBusObjectPath(rawValue: "/com/example")!)
+        XCTAssertNotEqual(DBusObjectPath().rawValue, DBusObjectPath(rawValue: "/com/example")!.rawValue)
+        XCTAssertNotEqual(DBusObjectPath().elements, DBusObjectPath(rawValue: "/com/example")!.elements)
         
-        // don't break value semantics by modifying global instance
+        // don't break value semantics by modifying instance
         var mutable = DBusObjectPath()
         XCTAssertEqual(mutable, objectPath)
         mutable.append(DBusObjectPath.Element(rawValue: "mutation1")!)

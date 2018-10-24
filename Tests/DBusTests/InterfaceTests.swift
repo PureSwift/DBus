@@ -34,11 +34,20 @@ final class InterfaceTests: XCTestCase {
             "a.ñ"
         ]
         
-        strings.forEach {
-            XCTAssertNil(DBusInterface(rawValue: $0), "\($0) should be invalid")
-            do { try DBusInterface.validate($0) }
-            catch { print($0, error); return }
-            XCTFail("Error expected for \($0)")
+        for string in strings {
+            
+            XCTAssertNil(DBusInterface(rawValue: string), "\(string) should be invalid")
+            do { try DBusInterface.validate(string) }
+            catch let error as DBusError {
+                XCTAssertEqual(error.name, .invalidArguments)
+                print(string, error)
+                return
+            }
+            catch {
+                XCTFail("\(error)")
+                return
+            }
+            XCTFail("Error expected for \(string)")
         }
     }
     

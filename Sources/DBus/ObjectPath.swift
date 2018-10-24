@@ -12,11 +12,24 @@ public struct DBusObjectPath {
     
     @_versioned
     internal private(set) var elements: [DBusObjectPath.Element]
+    
+    /// Cached string.
+    /// This will be the original string the object path was created from.
+    internal private(set) var string: String?
+    
+    /// Initialize with an array of elements.
+    public init(_ elements: [Element] = []) {
+        
+        self.elements = elements
+        self.string = String(elements)
+    }
 }
 
 // MARK: - String Parsing
 
 internal extension DBusObjectPath {
+    
+    static let separator = "/".first!
     
     /// Parses the object path string and returns the parsed object path.
     static func parse(_ string: String) -> [Element]? {
@@ -24,11 +37,11 @@ internal extension DBusObjectPath {
         // The path must begin with an ASCII '/' (integer 47) character,
         // and must consist of elements separated by slash characters.
         guard let firstCharacter = string.first, // cant't be empty string
-            firstCharacter == DBusObjectPath.separator, // must start with "/"
-            string.count == 1 || string.last != DBusObjectPath.separator // last character
+            firstCharacter == separator, // must start with "/"
+            string.count == 1 || string.last != separator // last character
             else { return nil }
         
-        let pathStrings = string.split(separator: DBusObjectPath.separator,
+        let pathStrings = string.split(separator: separator,
                                        maxSplits: .max,
                                        omittingEmptySubsequences: true)
         
@@ -37,7 +50,7 @@ internal extension DBusObjectPath {
         
         for elementString in pathStrings {
             
-            guard let element = Element(rawValue: String(elementString))
+            guard let element = Element(substring: elementString)
                 else { return nil }
             
             elements.append(element)
@@ -56,22 +69,6 @@ internal extension String {
     }
 }
 
-// MARK: - Constants
-
-internal extension DBusObjectPath {
-    
-    static let separator = "/".first!
-}
-
-public extension DBusObjectPath {
-    
-    /// Initialize with an array of elements.
-    public init(_ elements: [Element] = []) {
-        
-        self.elements = elements
-    }
-}
-
 // MARK: - RawRepresentable
 
 extension DBusObjectPath: RawRepresentable {
@@ -81,12 +78,13 @@ extension DBusObjectPath: RawRepresentable {
         guard let elements = DBusObjectPath.parse(rawValue)
             else { return nil }
         
-        self.init(elements)
+        self.elements = elements
+        self.string = rawValue // store original string
     }
     
     public var rawValue: String {
         
-        get { return String(elements) }
+        get { return string ?? String(elements) }
     }
 }
 
@@ -96,6 +94,14 @@ extension DBusObjectPath: Equatable {
     
     public static func == (lhs: DBusObjectPath, rhs: DBusObjectPath) -> Bool {
         
+        // fast path
+        if let lhsString = lhs.string,
+            let rhsString = rhs.string {
+            
+            return lhsString == rhsString
+        }
+        
+        // slower comparison
         return lhs.elements == rhs.elements
     }
 }
@@ -140,7 +146,10 @@ extension DBusObjectPath: MutableCollection {
      
         get { return elements[index] }
         
-        mutating set { elements[index] = newValue }
+        mutating set {
+            string = nil
+            elements[index] = newValue
+        }
     }
     
     public var count: Int {
@@ -177,6 +186,7 @@ extension DBusObjectPath: MutableCollection {
     /// Use this method to append a single element to the end of a mutable object path.
     public mutating func append(_ element: Element) {
         
+        string = nil
         elements.append(element)
     }
     
@@ -186,6 +196,7 @@ extension DBusObjectPath: MutableCollection {
     @discardableResult
     public mutating func removeFirst() -> Element {
         
+        string = nil
         return elements.removeFirst()
     }
     
@@ -195,6 +206,7 @@ extension DBusObjectPath: MutableCollection {
     @discardableResult
     public mutating func removeLast() -> Element {
         
+        string = nil
         return elements.removeLast()
     }
     
@@ -204,13 +216,14 @@ extension DBusObjectPath: MutableCollection {
     @discardableResult
     public mutating func remove(at index: Int) -> Element {
         
+        string = nil
         return elements.remove(at: index)
     }
     
     /// Removes all elements from the object path.
     public mutating func removeAll() {
         
-        elements.removeAll()
+        self = DBusObjectPath()
     }
 }
 
@@ -221,21 +234,36 @@ extension DBusObjectPath: RandomAccessCollection { }
 public extension DBusObjectPath {
     
     /// An element in the object path
-    public struct Element: RawRepresentable {
+    public struct Element {
         
-        public let rawValue: String
+        /// Don't copy buffer of individual elements.
+        internal let substring: Substring
         
-        public init?(rawValue: String) {
+        internal init?(substring: Substring) {
             
             // validate string
-            guard rawValue.isEmpty == false, // No element may be an empty string.
-                rawValue.contains(DBusObjectPath.separator) == false, // Multiple '/' characters cannot occur in sequence.
-                rawValue.rangeOfCharacter(from: Element.nonASCIICharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
+            guard substring.isEmpty == false, // No element may be an empty string.
+                substring.contains(DBusObjectPath.separator) == false, // Multiple '/' characters cannot occur in sequence.
+                substring.rangeOfCharacter(from: Element.nonASCIICharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
                 else { return nil }
             
-            // store validated string
-            self.rawValue = rawValue
+            self.substring = substring
         }
+    }
+}
+
+extension DBusObjectPath.Element: RawRepresentable {
+    
+    public init?(rawValue: String) {
+        
+        let substring = Substring(rawValue)
+        
+        self.init(substring: substring)
+    }
+    
+    public var rawValue: String {
+        
+        return String(substring)
     }
 }
 
