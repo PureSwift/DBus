@@ -9,6 +9,8 @@ import Foundation
 import CDBus
 
 /**
+ DBus Interface Name (e.g "`com.example.MusicPlayer1.readValue`")
+ 
  The various names in D-Bus messages have some restrictions.
  
  There is a maximum name length of 255 which applies to bus names, interfaces, and members.
@@ -35,8 +37,19 @@ import CDBus
  */
 public struct DBusInterface {
     
+    @_versioned
     internal private(set) var elements: [Element]
     
+    /// Cached string.
+    /// This will be the original string the object path was created from.
+    ///
+    /// - Note: Any subsequent mutation will set this value to nil, and `rawValue` and `description` getters
+    /// will have to rebuild the string for every invocation. Mutating leads to an unoptimized code path,
+    /// but for values created from either a string or an array of elements, this value is cached.
+    @_versioned
+    internal private(set) var string: String?
+    
+    /// Initialize with an array of elements.
     public init?(_ elements: [Element]) {
         
         // Must have at least one period, so at least 2 elements
@@ -44,6 +57,7 @@ public struct DBusInterface {
             else { return nil }
         
         self.elements = elements
+        self.string = String(elements)
     }
 }
 
@@ -112,12 +126,13 @@ extension DBusInterface: RawRepresentable {
         guard let elements = DBusInterface.parse(rawValue)
             else { return nil }
         
-        self.init(elements)
+        self.elements = elements
+        self.string = rawValue
     }
     
     public var rawValue: String {
         
-        return String(elements)
+        return string ?? String(elements)
     }
 }
 
@@ -125,6 +140,14 @@ extension DBusInterface: Equatable {
     
     public static func == (lhs: DBusInterface, rhs: DBusInterface) -> Bool {
         
+        // fast path
+        if let lhsString = lhs.string,
+            let rhsString = rhs.string {
+            
+            return lhsString == rhsString
+        }
+        
+        // slower comparison
         return lhs.elements == rhs.elements
     }
 }
@@ -155,7 +178,10 @@ extension DBusInterface: MutableCollection {
         
         get { return elements[index] }
         
-        mutating set { elements[index] = newValue }
+        mutating set {
+            string = nil
+            elements[index] = newValue
+        }
     }
     
     public var count: Int {
@@ -188,7 +214,7 @@ extension DBusInterface: MutableCollection {
     }
     
     public mutating func append(_ element: Element) {
-        
+        string = nil
         elements.append(element)
     }
 }

@@ -15,7 +15,6 @@ final class ObjectPathTests: XCTestCase {
         (testInvalid, "testInvalid"),
         (testValid, "testValid"),
         (testEmpty, "testEmpty"),
-        //(testCopyOnWrite, "testCopyOnWrite"),
         (testMultithread, "testMultithread")
     ]
     
@@ -29,9 +28,10 @@ final class ObjectPathTests: XCTestCase {
             "/com/example/ñanó",
             "/com/example/b$@s1",
             "/com/example/bus1/",
+            "/com/example/😀",
             "//",
             "///",
-            "\\",
+            "\\"
         ]
         
         strings.forEach { XCTAssertNil(DBusObjectPath(rawValue: $0)) }
@@ -112,11 +112,11 @@ final class ObjectPathTests: XCTestCase {
         
         // initialize string from another thread
         let queue = DispatchQueue(label: "\(#function) Queue", attributes: [.concurrent])
-        let end = Date() + 1.0
+        let end = Date() + 0.5
         while Date() < end {
             
-            for _ in 0 ..< 1000 {
-
+            for _ in 0 ..< 100 {
+                
                 let mutableArray = [""]
 
                 var newObjectPath: DBusObjectPath = []

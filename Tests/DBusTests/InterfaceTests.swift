@@ -20,6 +20,7 @@ final class InterfaceTests: XCTestCase {
         
         let strings = [
             "org.7-zip.Plugin",
+            "org.7zip.Plugin",
             "com.example..MusicPlayer1.Track",
             "com.example.MusicPlayer1.Track.",
             "com.example.",
@@ -32,7 +33,8 @@ final class InterfaceTests: XCTestCase {
             "com",
             "com.",
             "a.",
-            "a.ñ"
+            "a.ñ",
+            "a.😀"
         ]
         
         for string in strings {
@@ -72,10 +74,19 @@ final class InterfaceTests: XCTestCase {
                 else { XCTFail("Could not parse \(string)"); return }
             
             XCTAssertEqual(interface.rawValue, string)
+            XCTAssertEqual(interface.rawValue, String(interface.elements))
             XCTAssertEqual(interface.elements.map { $0.rawValue }, elements)
             XCTAssertEqual(Array(interface), interface.elements)
             XCTAssert(interface.count > 1)
             XCTAssertEqual(interface, DBusInterface(interface.elements))
+            
+            // mutate
+            var mutable = interface
+            mutable.append(DBusInterface.Element(rawValue: "Object1")!)
+            XCTAssertNil(mutable.string)
+            XCTAssertNotEqual(mutable, interface)
+            XCTAssertNotEqual(mutable.rawValue, interface.rawValue)
+            XCTAssertNotEqual(mutable.elements, interface.elements)
         }
     }
 }
