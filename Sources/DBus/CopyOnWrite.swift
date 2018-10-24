@@ -53,7 +53,7 @@ internal struct CopyOnWrite <Reference: CopyableReference> {
     
     /// Box object whose reference count is checked for uniqueness.
     @_versioned
-    internal var _reference: Box
+    internal private(set) var _reference: Box
     
     /// The reference is already retained externally (e.g. C manual reference count, singleton instance)
     /// and should be copied on first mutation regardless of Swift ARC uniqueness.

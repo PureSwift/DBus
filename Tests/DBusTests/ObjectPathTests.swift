@@ -15,7 +15,7 @@ final class ObjectPathTests: XCTestCase {
         (testInvalid, "testInvalid"),
         (testValid, "testValid"),
         (testEmpty, "testEmpty"),
-        (testCopyOnWrite, "testCopyOnWrite"),
+        //(testCopyOnWrite, "testCopyOnWrite"),
         (testMultithread, "testMultithread")
     ]
     
@@ -49,7 +49,6 @@ final class ObjectPathTests: XCTestCase {
                 else { XCTFail("Invalid string \(string)"); return }
             
             // test underlying values
-            XCTAssert(objectPath.internalReference.reference.isStringCached)
             XCTAssertEqual(objectPath.map { $0.rawValue }, elements, "Invalid elements")
             XCTAssertEqual(objectPath.rawValue, string)
             XCTAssertEqual(objectPath.description, string)
@@ -64,25 +63,12 @@ final class ObjectPathTests: XCTestCase {
             XCTAssertEqual(elementsObjectPath.map { $0.rawValue }, elements)
             XCTAssertEqual(Array(elementsObjectPath), elements.compactMap({ DBusObjectPath.Element(rawValue: $0) }))
             
-            // test lazy string initialization
-            XCTAssertFalse(elementsObjectPath.internalReference.reference.isStringCached)
-            XCTAssertEqual(elementsObjectPath.rawValue, string)
-            XCTAssert(elementsObjectPath.internalReference.reference.isStringCached)
-            
             // test equality
             XCTAssertEqual(objectPath, objectPath)
             XCTAssertEqual(elementsObjectPath, elementsObjectPath)
             XCTAssertEqual(objectPath, elementsObjectPath)
-            
-            // test internal reference
-            XCTAssert(objectPath.internalReference.reference !== DBusObjectPath.Reference.default)
-            XCTAssert(objectPath.internalReference.reference !== elementsObjectPath.internalReference.reference)
-            XCTAssertEqual(objectPath.internalReference.reference.string, elementsObjectPath.internalReference.reference.string)
             XCTAssertEqual(objectPath.rawValue, elementsObjectPath.rawValue)
             XCTAssertEqual(Array(objectPath), Array(elementsObjectPath))
-            
-            // string was never calculated / lazily initialized
-            XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild, 0)
         }
     }
     
@@ -90,40 +76,22 @@ final class ObjectPathTests: XCTestCase {
         
         // empty object path
         let objectPath = DBusObjectPath()
-        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild, 0)
         XCTAssertEqual(objectPath.rawValue, "/")
-        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild, 1)
         XCTAssert(objectPath.isEmpty)
         XCTAssertEqual(objectPath, [])
         XCTAssertEqual(DBusObjectPath(), DBusObjectPath(rawValue: "/"))
         XCTAssertEqual(DBusObjectPath(), DBusObjectPath())
         XCTAssertNotEqual(DBusObjectPath(), DBusObjectPath(rawValue: "/com/example")!)
         
-        // test unique reference
-        XCTAssert(objectPath.internalReference.reference === DBusObjectPath.Reference.default)
-        XCTAssert(objectPath.internalReference.reference === DBusObjectPath().internalReference.reference)
-        XCTAssert(DBusObjectPath().internalReference.reference === DBusObjectPath().internalReference.reference)
-        
         // don't break value semantics by modifying global instance
         var mutable = DBusObjectPath()
         XCTAssertEqual(mutable, objectPath)
-        XCTAssert(mutable.internalReference.reference === objectPath.internalReference.reference)
         mutable.append(DBusObjectPath.Element(rawValue: "mutation1")!)
-        XCTAssert(mutable.internalReference.reference !== objectPath.internalReference.reference)
-        XCTAssertNotEqual(mutable, objectPath)
         mutable.removeLast()
         XCTAssertEqual(mutable, objectPath)
-        XCTAssert(mutable.internalReference.reference !== objectPath.internalReference.reference)
-        XCTAssertFalse(mutable.internalReference.reference.isStringCached)
-        XCTAssertEqual(mutable.internalReference.reference.lazyStringBuild, 0)
         XCTAssertEqual(mutable.rawValue, objectPath.rawValue)
-        XCTAssert(mutable.internalReference.reference.isStringCached)
-        XCTAssertEqual(mutable.internalReference.reference.lazyStringBuild, 1)
-        
-        // string should only be calculated once
-        XCTAssertEqual(DBusObjectPath.Reference.default.lazyStringBuild, 1)
     }
-    
+    /*
     func testCopyOnWrite() {
         
         let string = "/com/example/bus1"
@@ -199,7 +167,7 @@ final class ObjectPathTests: XCTestCase {
         XCTAssertEqual(mutableReference.lazyStringBuild, 1)
         XCTAssertNotEqual(mutable.rawValue, "/")
         XCTAssertEqual(mutableReference.lazyStringBuild, 1)
-    }
+    }*/
     
     func testMultithread() {
         
@@ -211,11 +179,11 @@ final class ObjectPathTests: XCTestCase {
             DBusObjectPath.Element(rawValue: "bus1")!
             ])
         
-        let originalReference = objectPath.internalReference.reference
+        //let originalReference = objectPath.internalReference.reference
         
-        XCTAssertFalse(originalReference.isStringCached, "String has not been calculated yet")
-        XCTAssertEqual(originalReference.lazyStringBuild, 0)
-        XCTAssertFalse(originalReference.isStringCached)
+        //XCTAssertFalse(originalReference.isStringCached, "String has not been calculated yet")
+        //XCTAssertEqual(originalReference.lazyStringBuild, 0)
+        //XCTAssertFalse(originalReference.isStringCached)
         
         // instance for initializing string
         let readStringCopy = objectPath
@@ -225,24 +193,24 @@ final class ObjectPathTests: XCTestCase {
         let end = Date() + 1.0
         while Date() < end {
             
-            let _ = originalReference.isStringCached
+            //let _ = originalReference.isStringCached
             
             for _ in 0 ..< 1000 {
 
                 let mutableArray = [""]
 
                 var newObjectPath: DBusObjectPath = []
-                let reference = newObjectPath.internalReference.reference
+                //let reference = newObjectPath.internalReference.reference
                 XCTAssertEqual(newObjectPath.rawValue, "/")
                 newObjectPath.append(DBusObjectPath.Element(rawValue: "example")!)
                 XCTAssertEqual(newObjectPath.rawValue, "/example")
                 newObjectPath.append(DBusObjectPath.Element(rawValue: "mutation")!)
-                XCTAssert(newObjectPath.internalReference.reference === reference)
+                //XCTAssert(newObjectPath.internalReference.reference === reference)
                 
                 queue.async {
                     
                     // access variable from different threads
-                    let _ = originalReference.isStringCached
+                    //let _ = originalReference.isStringCached
                     
                     // trigger lazy initialization from another thread
                     XCTAssertEqual(newObjectPath.rawValue, "/example/mutation")
@@ -253,13 +221,15 @@ final class ObjectPathTests: XCTestCase {
                     var arrayCopy1 = mutableArray
                     var arrayCopy2 = mutableArray
                     
-                    XCTAssert(mutableCopy1.internalReference.reference === reference)
-                    XCTAssert(mutableCopy2.internalReference.reference === reference)
+                    //XCTAssert(mutableCopy1.internalReference.reference === reference)
+                    //XCTAssert(mutableCopy2.internalReference.reference === reference)
                     
                     queue.async {
                         
-                        XCTAssert(mutableCopy1.internalReference.reference === reference)
+                        //var mutableCopy1 = newObjectPath
+                        //XCTAssert(mutableCopy1.internalReference.reference === reference)
                         mutableCopy1.append(DBusObjectPath.Element(rawValue: "1")!)
+                        //XCTAssert(mutableCopy1.internalReference.reference !== reference)
                         XCTAssertEqual(mutableCopy1.rawValue, "/example/mutation/1")
                         
                         XCTAssertEqual(arrayCopy1, [""])
@@ -269,8 +239,10 @@ final class ObjectPathTests: XCTestCase {
                     
                     queue.async {
                         
-                        XCTAssert(mutableCopy2.internalReference.reference === reference)
+                        //var mutableCopy2 = newObjectPath
+                        //XCTAssert(mutableCopy2.internalReference.reference === reference)
                         mutableCopy2.append(DBusObjectPath.Element(rawValue: "2")!)
+                        //XCTAssert(mutableCopy2.internalReference.reference !== reference)
                         XCTAssertEqual(mutableCopy2.rawValue, "/example/mutation/2")
                         
                         XCTAssertEqual(arrayCopy2, [""])
@@ -282,35 +254,35 @@ final class ObjectPathTests: XCTestCase {
             
             queue.async {
                 
-                let _ = originalReference.isStringCached
+                //let _ = originalReference.isStringCached
                 
                 /// read string
-                XCTAssert(readStringCopy.internalReference.reference === originalReference)
+                //XCTAssert(readStringCopy.internalReference.reference === originalReference)
                 XCTAssertEqual(readStringCopy.rawValue, string)
-                XCTAssert(readStringCopy.internalReference.reference.isStringCached)
-                XCTAssert(originalReference.isStringCached)
+                //XCTAssert(readStringCopy.internalReference.reference.isStringCached)
+                //XCTAssert(originalReference.isStringCached)
             }
             
             queue.async {
                 
-                let _ = originalReference.isStringCached
+                //let _ = originalReference.isStringCached
                 
                 var mutateCopy = readStringCopy
-                XCTAssert(mutateCopy.internalReference.reference === originalReference)
+                //XCTAssert(mutateCopy.internalReference.reference === originalReference)
                 mutateCopy.append(DBusObjectPath.Element(rawValue: "mutation")!)
-                XCTAssert(mutateCopy.internalReference.reference !== originalReference)
-                XCTAssertFalse(mutateCopy.internalReference.reference.isStringCached)
+                //XCTAssert(mutateCopy.internalReference.reference !== originalReference)
+                //XCTAssertFalse(mutateCopy.internalReference.reference.isStringCached)
                 XCTAssertNotEqual(readStringCopy, mutateCopy)
-                XCTAssertFalse(mutateCopy.internalReference.reference.isStringCached)
+                //XCTAssertFalse(mutateCopy.internalReference.reference.isStringCached)
                 XCTAssertNotEqual(mutateCopy.rawValue, string)
-                XCTAssert(mutateCopy.internalReference.reference.isStringCached)
-                XCTAssert(mutateCopy.internalReference.reference !== originalReference)
+                //XCTAssert(mutateCopy.internalReference.reference.isStringCached)
+                //XCTAssert(mutateCopy.internalReference.reference !== originalReference)
             }
         }
         
         XCTAssertEqual(objectPath.rawValue, string)
-        XCTAssert(objectPath.internalReference.reference === originalReference)
-        XCTAssert(originalReference.isStringCached)
-        XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild, 1, "Original instance should not be mutated")
+        //XCTAssert(objectPath.internalReference.reference === originalReference)
+        //XCTAssert(originalReference.isStringCached)
+        //XCTAssertEqual(objectPath.internalReference.reference.lazyStringBuild, 1, "Original instance should not be mutated")
     }
 }

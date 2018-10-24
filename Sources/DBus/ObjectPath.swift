@@ -11,17 +11,8 @@ import Foundation
 public struct DBusObjectPath {
     
     @_versioned
-    internal private(set) var internalReference: CopyOnWrite<StringCollection<DBusObjectPath.Element>>
-    
-    internal init(_ internalReference: CopyOnWrite<Reference>) {
-        
-        self.internalReference = internalReference
-    }
+    internal private(set) var elements: [DBusObjectPath.Element]
 }
-
-// MARK: - ReferenceConvertible
-
-extension DBusObjectPath: ReferenceConvertible { }
 
 // MARK: - String Parsing
 
@@ -72,47 +63,12 @@ internal extension DBusObjectPath {
     static let separator = "/".first!
 }
 
-/// Default empty object path (`/`)
-private let emptyReference = DBusObjectPath.Reference()
-
-internal extension StringCollection where Element == DBusObjectPath.Element {
-   
-    /// Default empty object path (`/`)
-    static var `default`: DBusObjectPath.Reference {
-        
-        @inline(__always)
-        get { return emptyReference }
-    }
-}
-
 public extension DBusObjectPath {
     
-    public init() {
-        
-        // all new empty paths should point to same underlying object
-        // and copy upon the first mutation regardless of ARC (due to being a singleton)
-        self.init(CopyOnWrite<Reference>(.default, externalRetain: true))
-    }
-    
     /// Initialize with an array of elements.
-    public init(_ elements: [Element]) {
+    public init(_ elements: [Element] = []) {
         
-        let reference = Reference(elements: elements)
-        self.init(reference)
-    }
-    
-    /// Initialize with a variable argument list of elements.
-    public init(_ elements: Element...) {
-        
-        let reference = Reference(elements: elements)
-        self.init(reference)
-    }
-    
-    /// Initialize with a sequence of elements.
-    public init <S: Sequence> (_ sequence: S) where S.Element == Element {
-        
-        let reference = Reference(elements: Array(sequence))
-        self.init(reference)
+        self.elements = elements
     }
 }
 
@@ -122,15 +78,15 @@ extension DBusObjectPath: RawRepresentable {
     
     public init?(rawValue: String) {
         
-        guard let reference = Reference(string: rawValue)
+        guard let elements = DBusObjectPath.parse(rawValue)
             else { return nil }
         
-        self.init(reference)
+        self.init(elements)
     }
     
     public var rawValue: String {
         
-        get { return internalReference.reference.string }
+        get { return String(elements) }
     }
 }
 
@@ -140,7 +96,7 @@ extension DBusObjectPath: Equatable {
     
     public static func == (lhs: DBusObjectPath, rhs: DBusObjectPath) -> Bool {
         
-        return lhs.internalReference.reference.isEqual(to: rhs.internalReference.reference)
+        return lhs.elements == rhs.elements
     }
 }
 
@@ -150,7 +106,7 @@ extension DBusObjectPath: Hashable {
     
     public var hashValue: Int {
         
-        return internalReference.reference.string.hashValue
+        return rawValue.hashValue
     }
 }
 
@@ -182,14 +138,14 @@ extension DBusObjectPath: MutableCollection {
     
     public subscript (index: Index) -> Element {
      
-        get { return internalReference.reference[index] }
+        get { return elements[index] }
         
-        mutating set { internalReference.mutatingReference[index] = newValue }
+        mutating set { elements[index] = newValue }
     }
     
     public var count: Int {
         
-        return internalReference.reference.count
+        return elements.count
     }
     
     /// The start `Index`.
@@ -221,7 +177,7 @@ extension DBusObjectPath: MutableCollection {
     /// Use this method to append a single element to the end of a mutable object path.
     public mutating func append(_ element: Element) {
         
-        internalReference.mutatingReference.append(element)
+        elements.append(element)
     }
     
     /// Removes and returns the first element of the object path.
@@ -230,7 +186,7 @@ extension DBusObjectPath: MutableCollection {
     @discardableResult
     public mutating func removeFirst() -> Element {
         
-        return internalReference.mutatingReference.removeFirst()
+        return elements.removeFirst()
     }
     
     /// Removes and returns the last element of the object path.
@@ -239,7 +195,7 @@ extension DBusObjectPath: MutableCollection {
     @discardableResult
     public mutating func removeLast() -> Element {
         
-        return internalReference.mutatingReference.removeLast()
+        return elements.removeLast()
     }
     
     /// Removes and returns the element at the specified position.
@@ -248,13 +204,13 @@ extension DBusObjectPath: MutableCollection {
     @discardableResult
     public mutating func remove(at index: Int) -> Element {
         
-        return internalReference.mutatingReference.remove(at: index)
+        return elements.remove(at: index)
     }
     
     /// Removes all elements from the object path.
     public mutating func removeAll() {
         
-        self = DBusObjectPath() // initialize to singleton
+        elements.removeAll()
     }
 }
 
