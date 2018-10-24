@@ -195,23 +195,44 @@ extension DBusInterface: MutableCollection {
 
 extension DBusInterface: RandomAccessCollection { }
 
+// MARK: - Element
+
 public extension DBusInterface {
     
-    public struct Element: RawRepresentable {
+    /// An element in the object path
+    public struct Element {
         
-        public let rawValue: String
+        /// Don't copy buffer of individual elements, because these elements will always be created
+        /// from a bigger string, which we should just internally reference.
+        internal let substring: Substring
         
-        public init?(rawValue: String) {
+        /// Designated initializer.
+        internal init?(substring: Substring) {
             
             // validate string
-            guard rawValue.isEmpty == false, // No element may be an empty string.
-                rawValue.contains(DBusInterface.separator) == false, // Multiple '.' characters cannot occur in sequence.
-                rawValue.rangeOfCharacter(from: Element.nonASCIICharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
+            guard substring.isEmpty == false, // No element may be an empty string.
+                substring.contains(DBusInterface.separator) == false, // Multiple '.' characters cannot occur in sequence.
+                substring.rangeOfCharacter(from: Element.nonASCIICharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
                 else { return nil }
             
             // store validated string
-            self.rawValue = rawValue
+            self.substring = substring
         }
+    }
+}
+
+extension DBusInterface.Element: RawRepresentable {
+    
+    public init?(rawValue: String) {
+        
+        // This API will rarely be used
+        let substring = Substring(rawValue)
+        self.init(substring: substring)
+    }
+    
+    public var rawValue: String {
+        
+        return String(substring)
     }
 }
 
@@ -224,7 +245,7 @@ extension DBusInterface.Element: Equatable {
     
     public static func == (lhs: DBusInterface.Element, rhs: DBusInterface.Element) -> Bool {
         
-        return lhs.rawValue == rhs.rawValue
+        return lhs.substring == rhs.substring
     }
 }
 
@@ -240,6 +261,6 @@ extension DBusInterface.Element: Hashable {
     
     public var hashValue: Int {
         
-        return rawValue.hashValue
+        return substring.hashValue
     }
 }

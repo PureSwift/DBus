@@ -49,6 +49,8 @@ final class InterfaceTests: XCTestCase {
             }
             XCTFail("Error expected for \(string)")
         }
+        
+        XCTAssertNil(DBusInterface([]))
     }
     
     func testValid() {
@@ -70,6 +72,8 @@ final class InterfaceTests: XCTestCase {
             XCTAssertEqual(interface.rawValue, string)
             XCTAssertEqual(interface.elements.map { $0.rawValue }, elements)
             XCTAssertEqual(Array(interface), interface.elements)
+            XCTAssert(interface.count > 1)
+            XCTAssertEqual(interface, DBusInterface(interface.elements))
         }
     }
 }
