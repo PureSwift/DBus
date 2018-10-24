@@ -7,11 +7,27 @@
 
 import Foundation
 
-/// DBus Object Path
+/**
+ DBus Object Path (e.g "`/com/example/MusicPlayer1`")
+ 
+ The following rules define a valid object path. Implementations must not send or accept messages with invalid object paths.
+ 
+ The path may be of any length.
+ 
+ The path must begin with an ASCII '/' (integer 47) character, and must consist of elements separated by slash characters.
+ 
+ Each element must only contain the ASCII characters "[A-Z][a-z][0-9]_"
+ 
+ No element may be the empty string.
+ 
+ Multiple '/' characters cannot occur in sequence.
+ 
+ A trailing '/' character is not allowed unless the path is the root path (a single '/' character).
+ */
 public struct DBusObjectPath {
     
     @_versioned
-    internal private(set) var elements: [DBusObjectPath.Element]
+    internal private(set) var elements: [Element]
     
     /// Cached string.
     /// This will be the original string the object path was created from.
@@ -19,6 +35,7 @@ public struct DBusObjectPath {
     /// - Note: Any subsequent mutation will set this value to nil, and `rawValue` and `description` getters
     /// will have to rebuild the string for every invocation. So mutating leads to the unoptimized code path,
     /// but for values created from either a string or an array of elements, this value is cached.
+    @_versioned
     internal private(set) var string: String?
     
     /// Initialize with an array of elements.
@@ -250,7 +267,7 @@ public extension DBusObjectPath {
             // validate string
             guard substring.isEmpty == false, // No element may be an empty string.
                 substring.contains(DBusObjectPath.separator) == false, // Multiple '/' characters cannot occur in sequence.
-                substring.rangeOfCharacter(from: Element.nonASCIICharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
+                substring.rangeOfCharacter(from: Element.invalidCharacters) == nil // only ASCII characters "[A-Z][a-z][0-9]_"
                 else { return nil }
             
             self.substring = substring
@@ -275,7 +292,8 @@ extension DBusObjectPath.Element: RawRepresentable {
 
 private extension DBusObjectPath.Element {
     
-    static let nonASCIICharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ0123456789").inverted
+    /// only ASCII characters "[A-Z][a-z][0-9]_"
+    static let invalidCharacters = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLKMNOPQRSTUVWXYZ0123456789_").inverted
 }
 
 extension DBusObjectPath.Element: Equatable {
