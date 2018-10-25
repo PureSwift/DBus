@@ -10,12 +10,23 @@ import CDBus
 /// DBus Signature
 public struct DBusSignature {
     
+    /// Elements.
     @_versioned
-    internal private(set) var elements: [ValueType]
+    internal private(set) var elements: [Element]
     
-    public init(_ elements: [ValueType]) {
+    /// Cached string.
+    /// This will be the original string the object path was created from.
+    ///
+    /// - Note: Any subsequent mutation will set this value to nil, and `rawValue` and `description` getters
+    /// will have to rebuild the string for every invocation. Mutating leads to an unoptimized code path,
+    /// but for values created from either a string or an array of elements, this value is cached.
+    @_versioned
+    internal private(set) var string: String?
+    
+    public init(_ elements: [Element]) {
         
         self.elements = elements
+        self.string = String(elements)
     }
 }
 
@@ -188,10 +199,36 @@ internal extension DBusSignature {
     }
 }
 
+
+extension DBusSignature: RawRepresentable {
+    
+    public init?(rawValue: String) {
+        
+        guard let elements = DBusSignature.parse(rawValue)
+            else { return nil }
+        
+        self.elements = elements
+        self.string = rawValue
+    }
+    
+    public var rawValue: String {
+        
+        return string ?? String(elements)
+    }
+}
+
 extension DBusSignature: Equatable {
     
     public static func == (lhs: DBusSignature, rhs: DBusSignature) -> Bool {
         
+        // fast path
+        if let lhsString = lhs.string,
+            let rhsString = rhs.string {
+            
+            return lhsString == rhsString
+        }
+        
+        // slower comparison
         return lhs.elements == rhs.elements
     }
 }
@@ -209,22 +246,6 @@ extension DBusSignature: CustomStringConvertible {
     public var description: String {
         
         return rawValue
-    }
-}
-
-extension DBusSignature: RawRepresentable {
-    
-    public init?(rawValue: String) {
-        
-        guard let elements = DBusSignature.parse(rawValue)
-            else { return nil }
-        
-        self.init(elements)
-    }
-    
-    public var rawValue: String {
-        
-        return String(self.elements)
     }
 }
 
@@ -248,7 +269,10 @@ extension DBusSignature: MutableCollection {
         
         get { return elements[index] }
         
-        mutating set { elements[index] = newValue }
+        mutating set {
+            string = nil
+            elements[index] = newValue
+        }
     }
     
     public var count: Int {
@@ -282,30 +306,35 @@ extension DBusSignature: MutableCollection {
     
     public mutating func append(_ element: Element) {
         
+        string = nil
         elements.append(element)
     }
     
     @discardableResult
     public mutating func removeFirst() -> Element {
         
+        string = nil
         return elements.removeFirst()
     }
     
     @discardableResult
     public mutating func removeLast() -> Element {
         
+        string = nil
         return elements.removeLast()
     }
     
     @discardableResult
     public mutating func remove(at index: Int) -> Element {
         
+        string = nil
         return elements.remove(at: index)
     }
     
     /// Removes all elements from the object path.
     public mutating func removeAll(keepingCapacity: Bool = false) {
         
+        string = nil
         self.elements.removeAll(keepingCapacity: keepingCapacity)
     }
 }
@@ -577,6 +606,7 @@ extension DBusSignature.DictionaryType: RawRepresentable {
     
     public init?(rawValue: String) {
         
+        // TODO: Implement string parsing
         fatalError()
     }
     
@@ -626,6 +656,7 @@ extension DBusSignature.StructureType: RawRepresentable {
     
     public init?(rawValue: String) {
         
+        // TODO: Implement string parsing
         fatalError()
     }
     
