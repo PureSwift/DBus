@@ -33,8 +33,18 @@ final class ObjectPathTests: XCTestCase {
             "///",
             "\\"
         ]
-        
-        strings.forEach { XCTAssertNil(DBusObjectPath(rawValue: $0)) }
+                
+        for string in strings {
+            
+            XCTAssertNil(DBusObjectPath(rawValue: string), "\(string) should be invalid")
+            do { try DBusObjectPath.validate(string) }
+            catch let error as DBusError {
+                XCTAssertEqual(error.name, .invalidArguments)
+                print(string, error); return
+            }
+            catch { XCTFail("\(error)"); return }
+            XCTFail("Error expected for \(string)")
+        }
     }
     
     func testValid() {
@@ -46,6 +56,8 @@ final class ObjectPathTests: XCTestCase {
         ]
         
         for (string, elements) in values {
+            
+            XCTAssertNoThrow(try DBusObjectPath.validate(string))
             
             // initialize
             guard let objectPath = DBusObjectPath(rawValue: string)

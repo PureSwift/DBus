@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CDBus
 
 /**
  DBus Object Path (e.g "`/com/example/MusicPlayer1`")
@@ -78,6 +79,13 @@ internal extension DBusObjectPath {
         }
         
         return elements
+    }
+    
+    static func validate(_ string: String) throws {
+        
+        let error = DBusError.Reference()
+        guard Bool(dbus_validate_path(string, &error.internalValue))
+            else { throw DBusError(error)! }
     }
 }
 

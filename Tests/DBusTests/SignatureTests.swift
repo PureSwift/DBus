@@ -79,8 +79,16 @@ final class SignatureTests: XCTestCase {
             
             XCTAssertEqual(signature, expectedSignature)
             XCTAssertEqual(signature.rawValue, string)
+            XCTAssertEqual(signature.string, string)
             XCTAssertEqual(signature.elements, expectedSignature.elements)
             XCTAssertEqual(Array(signature), Array(expectedSignature))
+            
+            var mutable = signature
+            mutable.append(.double)
+            XCTAssertNil(mutable.string)
+            XCTAssertNotEqual(mutable, signature)
+            XCTAssertNotEqual(mutable.rawValue, signature.rawValue)
+            XCTAssertNotEqual(mutable.elements, signature.elements)
         }
     }
 }
