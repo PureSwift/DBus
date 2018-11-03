@@ -461,6 +461,29 @@ public extension String {
     }
 }
 
+public extension DBusSignature.ValueType {
+    
+    init(_ argument: DBusMessageArgument) {
+        
+        switch argument {
+        case .byte: self = .byte
+        case .boolean: self = .boolean
+        case .int16: self = .int16
+        case .int32: self = .int32
+        case .int64: self = .int64
+        case .uint16: self = .uint16
+        case .uint32: self = .uint32
+        case .uint64: self = .uint64
+        case .double: self = .double
+        case .fileDescriptor: self = .fileDescriptor
+        case .string: self = .string
+        case .objectPath: self = .objectPath
+        case .signature: self = .signature
+        case let .array(array): self = .array(array.type)
+        }
+    }
+}
+
 public extension DBusSignature {
     
     /// DBus Signature Character

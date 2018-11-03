@@ -152,7 +152,7 @@ internal extension DBusMessageIter {
             var basicValue = DBusBasicValue(dbl: value)
             try append(&basicValue, .double)
         case let .fileDescriptor(value):
-            var basicValue = DBusBasicValue(fd: value)
+            var basicValue = DBusBasicValue(fd: value.rawValue)
             try append(&basicValue, .fileDescriptor)
             
         case let .string(value):
@@ -163,11 +163,9 @@ internal extension DBusMessageIter {
             try append(value.rawValue, .signature)
             
         case let .array(array):
-            try appendContainer(type: .array, signature: array.signature) {
+            try appendContainer(type: .array, signature: DBusSignature([array.type])) {
                 for element in array {
-                    for argument in element {
-                        try $0.append(argument: argument)
-                    }
+                    try $0.append(argument: element)
                 }
             }
         }

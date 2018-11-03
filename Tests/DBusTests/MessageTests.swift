@@ -44,7 +44,10 @@ final class MessageTests: XCTestCase {
     func testArrayArguments() {
         
         let arguments: [DBusMessageArgument] = [
-            .array(DBusMessageArgument.Array([.struct([.int32])]))
+            .array(DBusMessageArgument.Array(type: .int32)),
+            .array(DBusMessageArgument.Array(type: .int32, [])!),
+            .array(DBusMessageArgument.Array(type: .int32, [.int32(1), .int32(2), .int32(3)])!),
+            .array(DBusMessageArgument.Array(type: .array(.int32)))
         ]
         
         do {

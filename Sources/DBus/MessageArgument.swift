@@ -20,7 +20,7 @@ public enum DBusMessageArgument: Equatable {
     case int64(Int64)
     case uint64(UInt64)
     case double(Double)
-    case fileDescriptor(CInt)
+    case fileDescriptor(FileDescriptor)
     
     case string(String)
     case objectPath(DBusObjectPath)
@@ -35,61 +35,72 @@ public enum DBusMessageArgument: Equatable {
 
 public extension DBusMessageArgument {
     
+    public struct FileDescriptor: RawRepresentable, Equatable, Hashable {
+        
+        public var rawValue: CInt
+        
+        public init(rawValue: CInt) {
+            
+            self.rawValue = rawValue
+        }
+    }
+}
+
+public extension DBusMessageArgument {
+    
     public struct Array: Equatable {
         
         /// Array elements.
-        internal let elements: [Element]
+        internal let elements: [DBusMessageArgument]
         
-        /// Signature of the array (all elements must have the same signature).
-        public let signature: DBusSignature
+        /// Type of the elements.
+        public let type: DBusSignature.ValueType
+        
+        /// Initialize with an empty array.
+        public init(type: DBusSignature.ValueType) {
+            
+            self.elements = []
+            self.type = type
+        }
+        
+        /// Initialize with an array of homogenous array elements and tries to infer the element value type.
+        public init?(_ elements: [Element]) {
+            
+            // dynamically infer signature
+            guard let element = elements.first
+                else { return nil } // can't infer from empty array
+            
+            let type = DBusSignature.ValueType(element)
+            
+            self.init(type: type, elements)
+        }
         
         /// Initialize with an array of homogenous array elements.
-        public init?(_ elements: [Element], signature: DBusSignature? = nil) {
-            
-            let expectedSignature: DBusSignature
-            
-            if let signature = signature {
-                
-                expectedSignature = signature
-                
-            } else {
-                
-                // dynamically infer signature
-                guard let element = elements.first
-                    else { return nil } // can't infer from empty array
-                
-                expectedSignature = DBusSignature(element.values)
-            }
+        public init?(type: DBusSignature.ValueType, _ elements: [Element]) {
             
             // validate homogenous array
             if elements.isEmpty == false {
                 
                 for element in elements {
                     
-                    let elementSignature = DBusSignature(element.values)
+                    let elementType = DBusSignature.ValueType(element)
                     
-                    guard elementSignature == expectedSignature
-                        else { return nil } // all elements must have the same signature
+                    guard elementType == type
+                        else { return nil } // all elements must have the same type
                 }
             }
             
             self.elements = elements
-            self.signature = expectedSignature
-        }
-        
-        /// Initialize with an empty array.
-        public init(_ signature: DBusSignature) {
-            
-            self.elements = []
-            self.signature = signature
+            self.type = type
         }
     }
 }
 
-
 // MARK: RandomAccessCollection
 
 extension DBusMessageArgument.Array: RandomAccessCollection {
+    
+    public typealias Element = DBusMessageArgument
     
     public typealias Index = Int
     
@@ -126,97 +137,109 @@ extension DBusMessageArgument.Array: RandomAccessCollection {
     }
 }
 
-public extension DBusMessageArgument.Array {
+// MARK: - DBusMessageArgumentValue
+
+internal protocol DBusMessageArgumentValue {
     
-    public struct Element: Equatable {
-        
-        internal let values: [DBusMessageArgument]
-        
-        public init?(_ values: [DBusMessageArgument]) {
-            
-            // Array must have an element type
-            guard values.isEmpty == false
-                else { return nil }
-            
-            self.values = values
-        }
+    //init?(argument: DBusMessageArgument)
+    
+    func toArgument() -> DBusMessageArgument
+}
+
+extension UInt8: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .byte(self)
     }
 }
 
-// MARK: RandomAccessCollection
-
-extension DBusMessageArgument.Array.Element: RandomAccessCollection {
+extension Bool: DBusMessageArgumentValue {
     
-    public typealias Element = DBusMessageArgument
-    
-    public typealias Index = Int
-    
-    public subscript (index: Index) -> Element {
-        return values[index]
-    }
-    
-    public var count: Int {
-        return values.count
-    }
-    
-    /// The start `Index`.
-    public var startIndex: Index {
-        return 0
-    }
-    
-    /// The end `Index`.
-    ///
-    /// This is the "one-past-the-end" position, and will always be equal to the `count`.
-    public var endIndex: Index {
-        return count
-    }
-    
-    public func index(before i: Index) -> Index {
-        return i - 1
-    }
-    
-    public func index(after i: Index) -> Index {
-        return i + 1
-    }
-    
-    public func makeIterator() -> IndexingIterator<DBusMessageArgument.Array.Element> {
-        return IndexingIterator(_elements: self)
+    func toArgument() -> DBusMessageArgument {
+        return .boolean(self)
     }
 }
 
-public extension DBusMessageArgument {
+extension Int16: DBusMessageArgumentValue {
     
-    /// DBus Signature
-    public var signature: DBusSignature {
-        
-        return DBusSignature(singatureElements)
-    }
-    
-    internal var singatureElements: [DBusSignature.Element] {
-        
-        switch self {
-        case .byte: return [.byte]
-        case .boolean: return [.boolean]
-        case .int16: return [.int16]
-        case .uint16: return [.uint16]
-        case .int32: return [.int32]
-        case .uint32: return [.uint32]
-        case .int64: return [.int64]
-        case .uint64: return [.uint64]
-        case .double: return [.double]
-        case .fileDescriptor: return [.fileDescriptor]
-        case .string: return [.string]
-        case .objectPath: return [.objectPath]
-        case .signature: return [.signature]
-        case let .array(array): return array.signature.elements
-        }
+    func toArgument() -> DBusMessageArgument {
+        return .int16(self)
     }
 }
 
-public extension DBusSignature {
+extension Int32: DBusMessageArgumentValue {
     
-    public init(_ arguments: [DBusMessageArgument]) {
-        
-        self.init(arguments.reduce([], { $0 + $1.singatureElements }))
+    func toArgument() -> DBusMessageArgument {
+        return .int32(self)
+    }
+}
+
+extension Int64: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .int64(self)
+    }
+}
+
+extension UInt16: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .uint16(self)
+    }
+}
+
+extension UInt32: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .uint32(self)
+    }
+}
+
+extension UInt64: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .uint64(self)
+    }
+}
+
+extension Double: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .double(self)
+    }
+}
+
+extension DBusMessageArgument.FileDescriptor: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .fileDescriptor(self)
+    }
+}
+
+extension String: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .string(self)
+    }
+}
+
+extension DBusObjectPath: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .objectPath(self)
+    }
+}
+
+extension DBusSignature: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .signature(self)
+    }
+}
+
+extension DBusMessageArgument.Array: DBusMessageArgumentValue {
+    
+    func toArgument() -> DBusMessageArgument {
+        return .array(self)
     }
 }
