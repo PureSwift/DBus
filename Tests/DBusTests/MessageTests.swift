@@ -12,11 +12,34 @@ import XCTest
 final class MessageTests: XCTestCase {
     
     static let allTests = [
-        (testInvalidArguments, "testInvalidArguments")
+        (testBasicValueArguments, "testBasicValueArguments")
     ]
     
-    func testInvalidArguments() {
+    func testBasicValueArguments() {
         
+        let arguments: [DBusMessageArgument] = [
+            .byte(.max),
+            .boolean(true),
+            .int16(.max),
+            .uint16(.max),
+            .int32(.max),
+            .uint32(.max),
+            .int64(.max),
+            .uint64(.max),
+            .string("Test String"),
+            .objectPath(DBusObjectPath("/com/example/bus1")),
+            .signature(DBusSignature("a{s(ai)}"))
+        ]
         
+        do {
+            
+            let message = try DBusMessage(type: .methodCall)
+            
+            try message.append(contentsOf: arguments)
+            
+            XCTAssertEqual(Array(message), arguments)
+        }
+        
+        catch { XCTFail("\(error)") }
     }
 }
