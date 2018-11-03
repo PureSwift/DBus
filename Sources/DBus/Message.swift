@@ -239,11 +239,22 @@ public final class DBusMessage {
     /// or the one a signal is being emitted from (for signal call type).
     ///
     /// The path must contain only valid characters as defined in the D-Bus specification.
-    public var path: String? {
+    public var path: DBusObjectPath? {
         
-        get { return getString(dbus_message_get_path) }
+        guard let string = getString(dbus_message_get_path)
+            else { return nil }
         
-        set { setString(dbus_message_set_path, newValue) }
+        guard let objectPath = DBusObjectPath(rawValue: string)
+            else { fatalError("Invalid object path \(string)") }
+        
+        return objectPath
+    }
+    
+    /// Sets the object path this message is being sent to (for DBUS_MESSAGE_TYPE_METHOD_CALL)
+    /// or the one a signal is being emitted from (for DBUS_MESSAGE_TYPE_SIGNAL).
+    public func setPath(_ newValue: DBusObjectPath?) throws {
+        
+        try setString(dbus_message_set_path, newValue?.rawValue)
     }
     
     /// The interface member being invoked (for method call type) or emitted (for signal type).
@@ -251,9 +262,19 @@ public final class DBusMessage {
     /// The member name must contain only valid characters as defined in the D-Bus specification.
     public var member: String? {
         
-        get { return getString(dbus_message_get_member) }
+        guard let string = getString(dbus_message_get_member)
+            else { return nil }
         
-        set { setString(dbus_message_set_member, newValue) }
+        return string
+    }
+    
+    /// Sets the interface member being invoked (DBusMessageType.MethodCall)
+    /// or emitted (DBusMessageType.Signal).
+    ///
+    /// The member name must contain only valid characters as defined in the D-Bus specification.
+    public func setMember(_ newValue: String?) throws {
+        
+        try setString(dbus_message_set_member, newValue)
     }
     
     /// The message sender.
@@ -265,9 +286,19 @@ public final class DBusMessage {
     /// If you aren't implementing a message bus daemon you shouldn't need to set the sender.
     public var sender: String? {
         
-        get { return getString(dbus_message_get_sender) }
+        return getString(dbus_message_get_sender)
+    }
+    
+    /// Sets the message sender.
+    ///
+    /// The sender must be a valid bus name as defined in the D-Bus specification.
+    ///
+    /// - Note: Usually you don't want to call this.
+    /// The message bus daemon will call it to set the origin of each message.
+    /// If you aren't implementing a message bus daemon you shouldn't need to set the sender.
+    public func setSender(_ newValue: String?) throws {
         
-        set { setString(dbus_message_set_sender, newValue) }
+        try setString(dbus_message_set_sender, newValue)
     }
     
     // MARK: - Private Methods
