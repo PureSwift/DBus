@@ -275,7 +275,7 @@ public final class DBusConnection {
     }
     
     /// Gets the ID of the server address we are authenticated to,
-    /// if this connection is on the client side, 
+    /// if this connection is on the client side,
     /// or `nil` if the connection is on the server side.
     public var serverIdentifier: String? {
         
@@ -352,5 +352,3 @@ public final class DBusConnection {
     }
     
 }
-
-

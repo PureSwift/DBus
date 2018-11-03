@@ -109,7 +109,7 @@ extension DBusError: CustomNSError {
     /// The error code within the given domain.
     public var errorCode: Int {
         
-        return name.hashValue
+        return name.rawValue.hash
     }
     
     /// The user-info dictionary.
@@ -126,7 +126,7 @@ extension DBusError: CustomNSError {
 
 public extension DBusError {
     
-    public struct Name {
+    public struct Name: Equatable, Hashable {
         
         public let rawValue: String
         
@@ -189,22 +189,6 @@ public extension DBusError.Name {
     ///
     /// `org.freedesktop.DBus.Error.InvalidSignature`
     public static let invalidSignature = DBusError.Name(rawValue: DBUS_ERROR_INVALID_SIGNATURE)!
-}
-
-extension DBusError.Name: Equatable {
-    
-    public static func == (lhs: DBusError.Name, rhs: DBusError.Name) -> Bool {
-        
-        return lhs.rawValue == rhs.rawValue
-    }
-}
-
-extension DBusError.Name: Hashable {
-    
-    public var hashValue: Int {
-        
-        return rawValue.hashValue
-    }
 }
 
 extension DBusError.Name: CustomStringConvertible {

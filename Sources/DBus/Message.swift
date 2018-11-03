@@ -245,8 +245,8 @@ public final class DBusMessage {
         return interface
     }
     
-    /// Sets the interface this message is being sent to (for DBUS_MESSAGE_TYPE_METHOD_CALL)
-    /// or the interface a signal is being emitted from (for DBUS_MESSAGE_TYPE_SIGNAL).
+    /// Sets the interface this message is being sent to (for `DBusMessageType.MethodCall`)
+    /// or the interface a signal is being emitted from (for `DBusMessageType.Signal`).
     public func setInterface(_ newValue: DBusInterface?) throws {
         
         try setString(dbus_message_set_interface, newValue?.rawValue)
@@ -267,8 +267,8 @@ public final class DBusMessage {
         return objectPath
     }
     
-    /// Sets the object path this message is being sent to (for DBUS_MESSAGE_TYPE_METHOD_CALL)
-    /// or the one a signal is being emitted from (for DBUS_MESSAGE_TYPE_SIGNAL).
+    /// Sets the object path this message is being sent to (for `DBusMessageType.MethodCall`)
+    /// or the one a signal is being emitted from (for `DBusMessageType.Signal`).
     public func setPath(_ newValue: DBusObjectPath?) throws {
         
         try setString(dbus_message_set_path, newValue?.rawValue)
@@ -288,8 +288,8 @@ public final class DBusMessage {
         return member
     }
     
-    /// Sets the interface member being invoked (DBusMessageType.MethodCall)
-    /// or emitted (DBusMessageType.Signal).
+    /// Sets the interface member being invoked (`DBusMessageType.MethodCall`)
+    /// or emitted (`DBusMessageType.Signal`).
     ///
     /// The member name must contain only valid characters as defined in the D-Bus specification.
     public func setMember(_ newValue: DBusMember?) throws {
