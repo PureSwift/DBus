@@ -30,6 +30,17 @@ public struct DBusSignature {
     }
 }
 
+internal extension DBusSignature {
+    
+    init(_ unsafe: String) {
+        
+        guard let value = DBusSignature(rawValue: unsafe)
+            else { fatalError("Invalid signature \(unsafe)") }
+        
+        self = value
+    }
+}
+
 // MARK: - String Parsing
 
 internal extension DBusSignature {

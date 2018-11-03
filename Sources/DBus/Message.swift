@@ -101,6 +101,13 @@ public final class DBusMessage {
         try iterator.append(argument: argument)
     }
     
+    /// Append contents of sequence.
+    public func append <S: Sequence> (contentsOf sequence: S) throws where S.Element == DBusMessageArgument {
+        
+        var iterator = DBusMessageIter(appending: self)
+        try sequence.forEach { try iterator.append(argument: $0) }
+    }
+    
     // MARK: - Properties
     
     /// The message type.
@@ -365,6 +372,41 @@ public extension DBusMessage {
         let copyMessage = DBusMessage(copyPointer)
         
         return copyMessage
+    }
+}
+
+// MARK: - Sequence
+
+extension DBusMessage: Sequence {
+    
+    public typealias Element = DBusMessageArgument
+    
+    public func makeIterator() -> Iterator {
+        return Iterator(self)
+    }
+}
+
+public extension DBusMessage {
+    
+    /// DBus Message Iterator
+    public struct Iterator: IteratorProtocol {
+        
+        public typealias Element = DBusMessageArgument
+        
+        /// Internal libdbus iterator
+        internal private(set) var internalValue: DBusMessageIter
+        
+        /// Intialize for iterating the specifed message.
+        internal init(_ message: DBusMessage) {
+            
+            // Message doesnt need to be retained becuase this should only be called while the message is still >= 1 ARC.
+            self.internalValue = DBusMessageIter(reading: message)
+        }
+        
+        public mutating func next() -> DBusMessageArgument? {
+            
+            return internalValue.next()
+        }
     }
 }
 

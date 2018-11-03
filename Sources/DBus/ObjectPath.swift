@@ -47,6 +47,17 @@ public struct DBusObjectPath {
     }
 }
 
+internal extension DBusObjectPath {
+    
+    init(_ unsafe: String) {
+        
+        guard let value = DBusObjectPath(rawValue: unsafe)
+            else { fatalError("Invalid object path \(unsafe)") }
+        
+        self = value
+    }
+}
+
 // MARK: - String Parsing
 
 internal extension DBusObjectPath {

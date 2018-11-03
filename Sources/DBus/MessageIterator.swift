@@ -16,6 +16,73 @@ internal extension DBusMessageIter {
         self.init()
         dbus_message_iter_init(message.internalPointer, &self)
     }
+    
+    mutating func next() -> DBusMessageArgument? {
+        
+        // make sure there is a valid element
+        guard let argumentType = DBusType(Int(dbus_message_iter_get_arg_type(&self)))
+            else { return nil }
+        
+        let value: DBusMessageArgument
+        
+        switch argumentType {
+            
+        case .byte:
+            value = .byte(readBasic().byt)
+        case .boolean:
+            value = .boolean(Bool(readBasic().bool_val))
+        case .int16:
+            value = .int16(readBasic().i16)
+        case .int32:
+            value = .int32(readBasic().i32)
+        case .int64:
+            value = .int64(Int64(readBasic().i64))
+        case .uint16:
+            value = .uint16(readBasic().u16)
+        case .uint32:
+            value = .uint32(readBasic().u32)
+        case .uint64:
+            value = .uint64(UInt64(readBasic().u64))
+            
+        case .string:
+            value = .string(readString())
+        case .objectPath:
+            value = .objectPath(DBusObjectPath(readString()))
+        case .signature:
+            value = .signature(DBusSignature(readString()))
+            
+        case .array:
+            fatalError()
+            
+        default:
+            fatalError()
+        }
+        
+        // move iterator to next element in the sequence
+        dbus_message_iter_next(&self)
+        
+        // return value
+        return value
+    }
+    
+    /// Read a basic value into the provided pointer.
+    @inline(__always)
+    private mutating func readBasic() -> DBusBasicValue {
+        
+        var basicValue = DBusBasicValue()
+        withUnsafeMutablePointer(to: &basicValue) {
+            dbus_message_iter_get_basic(&self, UnsafeMutableRawPointer($0))
+        }
+        return basicValue
+    }
+    
+    private mutating func readString() -> String {
+        
+        guard let cString = readBasic().str
+            else { fatalError("Nil string pointer") }
+        
+        return String(cString: cString)
+    }
 }
 
 // MARK: - Appending
