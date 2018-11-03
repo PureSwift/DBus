@@ -9,7 +9,7 @@
 import CDBus
 
 /// DBus Message argument value.
-public indirect enum DBusMessageArgument {
+public enum DBusMessageArgument: Equatable {
     
     case byte(UInt8)
     case boolean(Bool)
@@ -24,11 +24,19 @@ public indirect enum DBusMessageArgument {
     
     case string(String)
     case objectPath(DBusObjectPath)
-    case signature(String)
+    case signature(DBusSignature)
     
-    case array([DBusMessageArgument])
-    case variant(DBusMessageArgument)
+    case array(Array)
+    case variant
     
-    case `struct`
-    case dictionaryEntry
+    //case `struct`
+    //case dictionaryEntry
+}
+
+public extension DBusMessageArgument {
+    
+    public struct Array: Equatable {
+        
+        
+    }
 }

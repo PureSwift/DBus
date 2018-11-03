@@ -157,8 +157,8 @@ public extension DBusMessageArgument {
         case .signature: return .signature
         case .array: return .array
         case .variant: return .variant
-        case .struct: return .struct
-        case .dictionaryEntry: return .dictionaryEntry
+        //case .struct: return .struct
+        //case .dictionaryEntry: return .dictionaryEntry
         }
     }
 }
