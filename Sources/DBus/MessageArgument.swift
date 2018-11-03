@@ -79,6 +79,46 @@ public extension DBusMessageArgument {
     }
 }
 
+
+// MARK: RandomAccessCollection
+
+extension DBusMessageArgument.Array: RandomAccessCollection {
+    
+    public typealias Index = Int
+    
+    public subscript (index: Index) -> Element {
+        return elements[index]
+    }
+    
+    public var count: Int {
+        return elements.count
+    }
+    
+    /// The start `Index`.
+    public var startIndex: Index {
+        return 0
+    }
+    
+    /// The end `Index`.
+    ///
+    /// This is the "one-past-the-end" position, and will always be equal to the `count`.
+    public var endIndex: Index {
+        return count
+    }
+    
+    public func index(before i: Index) -> Index {
+        return i - 1
+    }
+    
+    public func index(after i: Index) -> Index {
+        return i + 1
+    }
+    
+    public func makeIterator() -> IndexingIterator<DBusMessageArgument.Array> {
+        return IndexingIterator(_elements: self)
+    }
+}
+
 public extension DBusMessageArgument.Array {
     
     public struct Element: Equatable {
@@ -96,31 +136,80 @@ public extension DBusMessageArgument.Array {
     }
 }
 
-public extension DBusSignature {
+// MARK: RandomAccessCollection
+
+extension DBusMessageArgument.Array.Element: RandomAccessCollection {
     
-    public init(_ argument: DBusMessageArgument) {
+    public typealias Element = DBusMessageArgument
+    
+    public typealias Index = Int
+    
+    public subscript (index: Index) -> Element {
+        return values[index]
+    }
+    
+    public var count: Int {
+        return values.count
+    }
+    
+    /// The start `Index`.
+    public var startIndex: Index {
+        return 0
+    }
+    
+    /// The end `Index`.
+    ///
+    /// This is the "one-past-the-end" position, and will always be equal to the `count`.
+    public var endIndex: Index {
+        return count
+    }
+    
+    public func index(before i: Index) -> Index {
+        return i - 1
+    }
+    
+    public func index(after i: Index) -> Index {
+        return i + 1
+    }
+    
+    public func makeIterator() -> IndexingIterator<DBusMessageArgument.Array.Element> {
+        return IndexingIterator(_elements: self)
+    }
+}
+
+public extension DBusMessageArgument {
+    
+    /// DBus Signature
+    public var signature: DBusSignature {
         
-        switch argument {
-        case .byte: self = [.byte]
-        case .boolean: self = [.boolean]
-        case .int16: self = [.int16]
-        case .uint16: self = [.uint16]
-        case .int32: self = [.int32]
-        case .uint32: self = [.uint32]
-        case .int64: self = [.int64]
-        case .uint64: self = [.uint64]
-        case .double: self = [.double]
-        case .fileDescriptor: self = [.fileDescriptor]
-        case .string: self = [.string]
-        case .objectPath: self = [.objectPath]
-        case .signature: self = [.signature]
-        case let .array(array): self = array.signature
+        return DBusSignature(singatureElements)
+    }
+    
+    internal var singatureElements: [DBusSignature.Element] {
+        
+        switch self {
+        case .byte: return [.byte]
+        case .boolean: return [.boolean]
+        case .int16: return [.int16]
+        case .uint16: return [.uint16]
+        case .int32: return [.int32]
+        case .uint32: return [.uint32]
+        case .int64: return [.int64]
+        case .uint64: return [.uint64]
+        case .double: return [.double]
+        case .fileDescriptor: return [.fileDescriptor]
+        case .string: return [.string]
+        case .objectPath: return [.objectPath]
+        case .signature: return [.signature]
+        case let .array(array): return array.signature.elements
         }
     }
+}
+
+public extension DBusSignature {
     
     public init(_ arguments: [DBusMessageArgument]) {
         
-        let elements = arguments.reduce([], { $0 + DBusSignature($1).elements })
-        self.init(elements)
+        self.init(arguments.reduce([], { $0 + $1.singatureElements }))
     }
 }

@@ -61,8 +61,6 @@ internal extension DBusMessageIter {
         case let .array(value):
             //appendContainer(type: .array, container: <#T##(inout DBusMessageIter) throws -> ()#>)
             fatalError()
-        case let .variant:
-            fatalError()
             
         }
     }
