@@ -97,7 +97,7 @@ public final class DBusMessage {
     /// Append argument.
     public func append(_ argument: DBusMessageArgument) throws {
         
-        var iterator = DBusMessageIter(message: self)
+        var iterator = DBusMessageIter(appending: self)
         try iterator.append(argument: argument)
     }
     

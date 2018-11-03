@@ -7,10 +7,47 @@
 
 import CDBus
 
+// MARK: - Iterating
+
+internal extension DBusMessageIter {
+    
+    init(reading message: DBusMessage) {
+        
+        self.init()
+        dbus_message_iter_init(message.internalPointer, &self)
+    }
+}
+
+// MARK: - Appending
+
+internal extension DBusMessageIter {
+    
+    /// A message iterator for which `dbus_message_iter_abandon_container_if_open()` is the only valid operation.
+    static var closed: DBusMessageIter {
+        
+        var iter = DBusMessageIter()
+        dbus_message_iter_init_closed(&iter)
+        return iter
+    }
+    
+    /**
+     Abandons creation of a contained-typed value and frees resources created by dbus_message_iter_open_container().
+     
+     Once this returns, the message is hosed and you have to start over building the whole message.
+     
+     Unlike dbus_message_iter_abandon_container(), it is valid to call this function on an iterator that was initialized with DBUS_MESSAGE_ITER_INIT_CLOSED, or an iterator that was already closed or abandoned. However, it is not valid to call this function on uninitialized memory. This is intended to be used in error cleanup code paths, similar to this pattern:
+     */
+    @inline(__always)
+    mutating func abandonContainerIfOpen(_ subcontainer: inout DBusMessageIter) {
+        
+        dbus_message_iter_abandon_container_if_open(&self, &subcontainer)
+    }
+}
+
 internal extension DBusMessageIter {
     
     /// Initializes a DBusMessageIter for appending arguments to the end of a message.
-    init(message: DBusMessage) {
+    init(appending message: DBusMessage) {
         
         self.init()
         dbus_message_iter_init_append(message.internalPointer, &self)
@@ -58,10 +95,14 @@ internal extension DBusMessageIter {
         case let .signature(value):
             try append(value.rawValue, .signature)
             
-        case let .array(value):
-            //appendContainer(type: .array, container: <#T##(inout DBusMessageIter) throws -> ()#>)
-            fatalError()
-            
+        case let .array(array):
+            try appendContainer(type: .array, signature: array.signature) {
+                for element in array {
+                    for argument in element {
+                        try $0.append(argument: argument)
+                    }
+                }
+            }
         }
     }
     
@@ -81,11 +122,18 @@ internal extension DBusMessageIter {
         }
     }
     
-    mutating func appendContainer(type: DBusType, signature: String? = nil, container: (inout DBusMessageIter) throws -> ()) throws {
+    /**
+     Appends a container-typed value to the message.
+    */
+    private mutating func appendContainer(type: DBusType, signature: DBusSignature? = nil, container: (inout DBusMessageIter) throws -> ()) throws {
         
         var subIterator = DBusMessageIter()
         
-        guard Bool(dbus_message_iter_open_container(&self, Int32(type.integerValue), signature, &subIterator))
+        /**
+         On success, you are required to append the contents of the container using the returned sub-iterator, and then call dbus_message_iter_close_container(). Container types are for example struct, variant, and array. For variants, the contained_signature should be the type of the single value inside the variant. For structs and dict entries, contained_signature should be NULL; it will be set to whatever types you write into the struct. For arrays, contained_signature should be the type of the array elements.
+        */
+        
+        guard Bool(dbus_message_iter_open_container(&self, Int32(type.integerValue), signature?.rawValue, &subIterator))
             else { throw DBusError.messageAppendOutOfMemory }
         
         defer { dbus_message_iter_close_container(&self, &subIterator) }
