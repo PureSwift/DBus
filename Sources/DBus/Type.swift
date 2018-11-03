@@ -137,6 +137,7 @@ internal extension DBusType {
     }
 }
 
+/*
 public extension DBusMessageArgument {
     
     public var type: DBusType {
@@ -162,3 +163,4 @@ public extension DBusMessageArgument {
         }
     }
 }
+*/

@@ -23,12 +23,14 @@ public struct DBusSignature {
     @_versioned
     internal private(set) var string: String?
     
-    public init(_ elements: [Element]) {
+    public init(_ elements: [Element] = []) {
         
         self.elements = elements
         self.string = String(elements)
     }
 }
+
+// MARK: - String Parsing
 
 internal extension DBusSignature {
     
@@ -199,6 +201,7 @@ internal extension DBusSignature {
     }
 }
 
+// MARK: - RawRepresentable
 
 extension DBusSignature: RawRepresentable {
     
@@ -216,6 +219,8 @@ extension DBusSignature: RawRepresentable {
         return string ?? String(elements)
     }
 }
+
+// MARK: - Equatable
 
 extension DBusSignature: Equatable {
     
