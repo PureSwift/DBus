@@ -116,7 +116,7 @@ internal extension DBusType {
     /// Return `true` if the argument is a valid typecode.
     var isValid: Bool {
         
-        return Bool(dbus_type_is_fixed(Int32(integerValue)))
+        return Bool(dbus_type_is_valid(Int32(integerValue)))
     }
 }
 
