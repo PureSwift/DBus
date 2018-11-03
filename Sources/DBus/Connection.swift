@@ -221,6 +221,20 @@ public final class DBusConnection {
     
     // MARK: - Dynamic Properties
     
+    /// Returns the first-received message from the incoming message queue, leaving it in the queue.
+    ///
+    /// - Note: The message object is only valid for the duration of the block.
+    public func withFirstMessage<Result>(_ block: (DBusMessage?) throws -> Result) rethrows -> Result {
+        
+        guard let messageInternalPointer = dbus_connection_borrow_message(internalPointer)
+            else { return try block(nil) }
+        
+        let borrowedMessage = DBusMessage(messageInternalPointer)
+        
+        return try block(borrowedMessage)
+    }
+    
+    /// Returns a copy of the first message.
     public var firstMessage: DBusMessage? {
         
         guard let messageInternalPointer = dbus_connection_borrow_message(internalPointer)
@@ -229,9 +243,7 @@ public final class DBusConnection {
         /// No one can get at the message while its borrowed, so return it as quickly as possible 
         /// and don't keep a reference to it after returning it. If you need to keep the message, make a copy of it.
         let borrowedMessage = DBusMessage(messageInternalPointer)
-        
-        let message = borrowedMessage.copy
-        
+        let message = try? borrowedMessage.copy()
         return message
     }
     
@@ -262,7 +274,8 @@ public final class DBusConnection {
         return Bool(dbus_connection_has_messages_to_send(internalPointer))
     }
     
-    /// Gets the ID of the server address we are authenticated to, if this connection is on the client side, 
+    /// Gets the ID of the server address we are authenticated to,
+    /// if this connection is on the client side, 
     /// or `nil` if the connection is on the server side.
     public var serverIdentifier: String? {
         
