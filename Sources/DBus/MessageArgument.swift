@@ -76,6 +76,13 @@ public extension DBusMessageArgument {
             self.elements = elements
             self.signature = expectedSignature
         }
+        
+        /// Initialize with an empty array.
+        public init(_ signature: DBusSignature) {
+            
+            self.elements = []
+            self.signature = signature
+        }
     }
 }
 

@@ -34,12 +34,26 @@ final class MessageTests: XCTestCase {
         do {
             
             let message = try DBusMessage(type: .methodCall)
-            
             try message.append(contentsOf: arguments)
-            
-            XCTAssertEqual(Array(message), arguments)
+            XCTAssertEqual(Array(message), arguments, "Could not iterate message")
         }
         
+        catch { XCTFail("\(error)") }
+    }
+    
+    func testArrayArguments() {
+        
+        let arguments: [DBusMessageArgument] = [
+            .array(DBusMessageArgument.Array([.struct([.int32])]))
+        ]
+        
+        do {
+            
+            let message = try DBusMessage(type: .methodCall)
+            try message.append(contentsOf: arguments)
+            //XCTAssertEqual(Array(message), arguments, "Could not iterate message")
+        }
+            
         catch { XCTFail("\(error)") }
     }
 }
