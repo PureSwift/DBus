@@ -14,6 +14,7 @@ final class MessageTests: XCTestCase {
     static let allTests = [
         (testBasicValueArguments, "testBasicValueArguments"),
         (testArrayArguments, "testArrayArguments"),
+        (testStructureArguments, "testStructureArguments"),
         (testErrorMessage, "testErrorMessage")
     ]
     
@@ -39,7 +40,6 @@ final class MessageTests: XCTestCase {
             try message.append(contentsOf: arguments)
             XCTAssertEqual(Array(message), arguments, "Could not iterate message")
         }
-        
         catch { XCTFail("\(error)") }
     }
     
@@ -63,6 +63,16 @@ final class MessageTests: XCTestCase {
                 .array(DBusMessageArgument.Array(type: .string, [.string("A1"), .string("A2"), .string("A3")])!),
                 .array(DBusMessageArgument.Array(type: .string, [.string("B1"), .string("B2"), .string("B3")])!),
                 .array(DBusMessageArgument.Array(type: .string, [.string("C1"), .string("C2"), .string("C3")])!)
+                ])!),
+            .array(DBusMessageArgument.Array(type: .struct([.int32, .string]), [
+                .struct(DBusMessageArgument.Structure([
+                    .int32(1),
+                    .string("Test String 1")
+                    ])!),
+                .struct(DBusMessageArgument.Structure([
+                    .int32(2),
+                    .string("Test String 2")
+                    ])!)
                 ])!)
         ]
         
@@ -72,7 +82,34 @@ final class MessageTests: XCTestCase {
             try message.append(contentsOf: arguments)
             XCTAssertEqual(Array(message), arguments, "Could not iterate message")
         }
+        catch { XCTFail("\(error)") }
+    }
+    
+    func testStructureArguments() {
+        
+        let arguments: [DBusMessageArgument] = [
+            .struct(DBusMessageArgument.Structure([
+                .int32(1),
+                .string("Test String")
+                ])!),
+            .struct(DBusMessageArgument.Structure([
+                .int32(1),
+                .string("Test String 1"),
+                .objectPath(DBusObjectPath("/com/example/bus1")),
+                .struct(DBusMessageArgument.Structure([
+                    .int32(2),
+                    .string("Test String 2"),
+                    .objectPath(DBusObjectPath("/com/example/bus2"))
+                    ])!)
+                ])!)
+        ]
+        
+        do {
             
+            let message = try DBusMessage(type: .methodCall)
+            try message.append(contentsOf: arguments)
+            XCTAssertEqual(Array(message), arguments, "Could not iterate message")
+        }
         catch { XCTFail("\(error)") }
     }
     
@@ -95,7 +132,6 @@ final class MessageTests: XCTestCase {
             XCTAssertEqual(DBusError(message: errorMessage), error)
             XCTAssertEqual(errorMessage.replySerial, originalMessage.serial)
         }
-        
         catch { XCTFail("\(error)") }
     }
 }

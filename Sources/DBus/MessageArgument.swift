@@ -34,6 +34,7 @@ public enum DBusMessageArgument: Equatable {
 
 public extension DBusMessageArgument {
     
+    /// Argument value type. 
     public var type: DBusSignature.ValueType {
         
         switch self {
