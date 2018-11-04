@@ -9,9 +9,9 @@ import CDBus
 
 // MARK: - Iterating
 
-internal extension DBusMessageIter {
+extension DBusMessageIter {
     
-    init(reading message: DBusMessage) {
+    init(iterating message: DBusMessage) {
         
         self.init()
         dbus_message_iter_init(message.internalPointer, &self)
@@ -52,7 +52,25 @@ internal extension DBusMessageIter {
             value = .signature(DBusSignature(readString()))
             
         case .array:
-            fatalError()
+            
+            guard let signature = try? self.signature(),
+                let arrayType = signature.first,
+                case let .array(valueType) = arrayType
+                else { fatalError("Invalid array signature \((try? self.signature())?.description ?? "")") }
+            
+            value = recurse {
+                
+                var elements = [DBusMessageArgument]()
+                
+                while let element = $0.next() {
+                    elements.append(element)
+                }
+                
+                guard let array = DBusMessageArgument.Array(type: valueType, elements)
+                    else { fatalError("Invalid elements") }
+                
+                return .array(array)
+            }
             
         default:
             fatalError()
@@ -82,6 +100,33 @@ internal extension DBusMessageIter {
             else { fatalError("Nil string pointer") }
         
         return String(cString: cString)
+    }
+    
+    /// Recurses into a container value when reading values from a message.
+    private mutating func recurse <Result> (_ recurseBlock: (inout DBusMessageIter) throws -> Result) rethrows -> Result {
+        
+        /**
+         Recurses into a container value when reading values from a message, initializing a sub-iterator to use for traversing the child values of the container.
+         
+         Note that this recurses into a value, not a type, so you can only recurse if the value exists. The main implication of this is that if you have for example an empty array of array of int32, you can recurse into the outermost array, but it will have no values, so you won't be able to recurse further. There's no array of int32 to recurse into.
+         */
+        
+        var subiterator = DBusMessageIter()
+        dbus_message_iter_recurse(&self, &subiterator)
+        
+        return try recurseBlock(&subiterator)
+    }
+    
+    private mutating func signature() throws -> DBusSignature {
+        
+        guard let cString = dbus_message_iter_get_signature(&self)
+            else { throw DBusError(name: .noMemory, message: "Could not get signature") }
+        
+        let string = String(cString: cString)
+        
+        dbus_free(UnsafeMutableRawPointer(cString))
+        
+        return DBusSignature(string)
     }
 }
 

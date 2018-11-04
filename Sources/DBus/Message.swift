@@ -400,7 +400,7 @@ public extension DBusMessage {
         internal init(_ message: DBusMessage) {
             
             // Message doesnt need to be retained becuase this should only be called while the message is still >= 1 ARC.
-            self.internalValue = DBusMessageIter(reading: message)
+            self.internalValue = DBusMessageIter(iterating: message)
         }
         
         public mutating func next() -> DBusMessageArgument? {
