@@ -83,9 +83,9 @@ internal extension DBusInterface {
         var elements = [Element]()
         elements.reserveCapacity(pathStrings.count) // pre-allocate buffer
         
-        for elementString in pathStrings {
+        for substring in pathStrings {
             
-            guard let element = Element(rawValue: String(elementString))
+            guard let element = Element(substring: substring)
                 else { return nil }
             
             elements.append(element)
