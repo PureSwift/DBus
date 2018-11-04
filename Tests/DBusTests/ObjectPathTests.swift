@@ -37,10 +37,11 @@ final class ObjectPathTests: XCTestCase {
         for string in strings {
             
             XCTAssertNil(DBusObjectPath(rawValue: string), "\(string) should be invalid")
+            XCTAssertThrowsError(try DBusObjectPath.validate(string))
             do { try DBusObjectPath.validate(string) }
             catch let error as DBusError {
                 XCTAssertEqual(error.name, .invalidArguments)
-                print(string, error); return
+                print("\"\(string)\" is invalid: \(error.message)"); return
             }
             catch { XCTFail("\(error)"); return }
             XCTFail("Error expected for \(string)")

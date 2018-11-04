@@ -37,12 +37,13 @@ final class SignatureTests: XCTestCase {
         for string in strings {
             
             XCTAssertNil(DBusSignature(rawValue: string), "\(string) should be invalid")
+            XCTAssertThrowsError(try DBusSignature.validate(string))
             do { try DBusSignature.validate(string) }
             catch let error as DBusError {
                 XCTAssertEqual(error.name, .invalidSignature)
-                print(string, error); return
+                print("\"\(string)\" is invalid: \(error.message)"); return
             }
-            catch { XCTFail("\(error)"); return }
+            catch { XCTFail("Invalid error \(error)"); return }
             XCTFail("Error expected for \(string)")
         }
     }

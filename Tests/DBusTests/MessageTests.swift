@@ -45,6 +45,7 @@ final class MessageTests: XCTestCase {
     func testArrayArguments() {
         
         let arguments: [DBusMessageArgument] = [
+            .array(DBusMessageArgument.Array([.int16(1), .int16(2), .int16(3)])!),
             .array(DBusMessageArgument.Array(type: .int16, [.int16(1), .int16(2), .int16(3)])!),
             .array(DBusMessageArgument.Array(type: .int16)),
             .array(DBusMessageArgument.Array(type: .int32, [.int32(1), .int32(2), .int32(3)])!),
