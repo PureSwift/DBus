@@ -43,6 +43,11 @@ extension DBusMessageIter {
             value = .uint32(readBasic().u32)
         case .uint64:
             value = .uint64(UInt64(readBasic().u64))
+        case .double:
+            value = .double(readBasic().dbl)
+        case .fileDescriptor:
+            let fileDescriptor = DBusMessageArgument.FileDescriptor(rawValue: readBasic().fd)
+            value = .fileDescriptor(fileDescriptor)
             
         case .string:
             value = .string(readString())
@@ -138,6 +143,8 @@ extension DBusMessageIter {
 
 // MARK: - Appending
 
+/*
+
 internal extension DBusMessageIter {
     
     /// A message iterator for which `dbus_message_iter_abandon_container_if_open()` is the only valid operation.
@@ -161,6 +168,8 @@ internal extension DBusMessageIter {
         dbus_message_iter_abandon_container_if_open(&self, &subcontainer)
     }
 }
+
+*/
 
 internal extension DBusMessageIter {
     

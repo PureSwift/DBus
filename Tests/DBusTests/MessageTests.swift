@@ -29,6 +29,7 @@ final class MessageTests: XCTestCase {
             .uint32(.max),
             .int64(.max),
             .uint64(.max),
+            .double(0.1111),
             .string("Test String"),
             .objectPath(DBusObjectPath("/com/example/bus1")),
             .signature(DBusSignature("a{s(ai)}")),
