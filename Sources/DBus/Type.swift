@@ -136,31 +136,3 @@ internal extension DBusType {
         return Int(rawValue.utf8.first!)
     }
 }
-
-/*
-public extension DBusMessageArgument {
-    
-    public var type: DBusType {
-        
-        switch self {
-        case .byte: return .byte
-        case .boolean: return .boolean
-        case .int16: return .int16
-        case .int32: return .int32
-        case .int64: return .int64
-        case .uint16: return .uint16
-        case .uint32: return .uint32
-        case .uint64: return .uint64
-        case .double: return .double
-        case .fileDescriptor: return .fileDescriptor
-        case .string: return .string
-        case .objectPath: return .objectPath
-        case .signature: return .signature
-        case .array: return .array
-        case .variant: return .variant
-        //case .struct: return .struct
-        //case .dictionaryEntry: return .dictionaryEntry
-        }
-    }
-}
-*/

@@ -27,14 +27,40 @@ public enum DBusMessageArgument: Equatable {
     case signature(DBusSignature)
     
     case array(Array)
+    case `struct`(Structure)
     //case variant
-    
-    //case `struct`
     //case dictionaryEntry
 }
 
 public extension DBusMessageArgument {
     
+    public var type: DBusSignature.ValueType {
+        
+        switch self {
+        case .byte: return .byte
+        case .boolean: return .boolean
+        case .int16: return .int16
+        case .int32: return .int32
+        case .int64: return .int64
+        case .uint16: return .uint16
+        case .uint32: return .uint32
+        case .uint64: return .uint64
+        case .double: return .double
+        case .fileDescriptor: return .fileDescriptor
+        case .string: return .string
+        case .objectPath: return .objectPath
+        case .signature: return .signature
+        case let .array(array): return .array(array.type)
+        case let .struct(structure): return .struct(structure.type)
+        }
+    }
+}
+
+// MARK: - Supporting Types
+
+public extension DBusMessageArgument {
+    
+    /// File Descriptor
     public struct FileDescriptor: RawRepresentable, Equatable, Hashable {
         
         public var rawValue: CInt
@@ -43,6 +69,79 @@ public extension DBusMessageArgument {
             
             self.rawValue = rawValue
         }
+    }
+}
+
+public extension DBusMessageArgument {
+    
+    /// Structure
+    public struct Structure: Equatable {
+        
+        /// Structure elements.
+        internal let elements: [DBusMessageArgument]
+        
+        /// Initializes a structure argument with the specified arguments.
+        public init?(_ elements: [DBusMessageArgument]) {
+            
+            guard elements.isEmpty == false
+                else { return nil }
+            
+            self.elements = elements
+        }
+    }
+}
+
+public extension DBusMessageArgument.Structure {
+    
+    var type: DBusSignature.StructureType {
+        
+        let types = elements.map { $0.type }
+        
+        guard let structureType = DBusSignature.StructureType(types)
+            else { fatalError("Invalid structure") }
+        
+        return structureType
+    }
+}
+
+// MARK: RandomAccessCollection
+
+extension DBusMessageArgument.Structure: RandomAccessCollection {
+    
+    public typealias Element = DBusMessageArgument
+    
+    public typealias Index = Int
+    
+    public subscript (index: Index) -> Element {
+        return elements[index]
+    }
+    
+    public var count: Int {
+        return elements.count
+    }
+    
+    /// The start `Index`.
+    public var startIndex: Index {
+        return 0
+    }
+    
+    /// The end `Index`.
+    ///
+    /// This is the "one-past-the-end" position, and will always be equal to the `count`.
+    public var endIndex: Index {
+        return count
+    }
+    
+    public func index(before i: Index) -> Index {
+        return i - 1
+    }
+    
+    public func index(after i: Index) -> Index {
+        return i + 1
+    }
+    
+    public func makeIterator() -> IndexingIterator<DBusMessageArgument.Structure> {
+        return IndexingIterator(_elements: self)
     }
 }
 
@@ -70,9 +169,7 @@ public extension DBusMessageArgument {
             guard let element = elements.first
                 else { return nil } // can't infer from empty array
             
-            let type = DBusSignature.ValueType(element)
-            
-            self.init(type: type, elements)
+            self.init(type: element.type, elements)
         }
         
         /// Initialize with an array of homogenous array elements.
@@ -83,9 +180,7 @@ public extension DBusMessageArgument {
                 
                 for element in elements {
                     
-                    let elementType = DBusSignature.ValueType(element)
-                    
-                    guard elementType == type
+                    guard element.type == type
                         else { return nil } // all elements must have the same type
                 }
             }

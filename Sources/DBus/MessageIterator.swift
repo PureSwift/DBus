@@ -58,19 +58,23 @@ extension DBusMessageIter {
                 case let .array(valueType) = arrayType
                 else { fatalError("Invalid array signature \((try? self.signature())?.description ?? "")") }
             
-            value = recurse {
-                
-                var elements = [DBusMessageArgument]()
-                
-                while let element = $0.next() {
-                    elements.append(element)
-                }
-                
-                guard let array = DBusMessageArgument.Array(type: valueType, elements)
-                    else { fatalError("Invalid elements") }
-                
-                return .array(array)
-            }
+            var elements = [DBusMessageArgument]()
+            recursiveIterate { elements.append($0) }
+            
+            guard let array = DBusMessageArgument.Array(type: valueType, elements)
+                else { fatalError("Invalid elements") }
+            
+            value = .array(array)
+            
+        case .struct:
+            
+            var elements = [DBusMessageArgument]()
+            recursiveIterate { elements.append($0) }
+            
+            guard let structure = DBusMessageArgument.Structure(elements)
+                else { fatalError("Invalid elements") }
+            
+            value = .struct(structure)
             
         default:
             fatalError()
@@ -103,7 +107,7 @@ extension DBusMessageIter {
     }
     
     /// Recurses into a container value when reading values from a message.
-    private mutating func recurse <Result> (_ recurseBlock: (inout DBusMessageIter) throws -> Result) rethrows -> Result {
+    private mutating func recursiveIterate(_ iterate: (DBusMessageArgument) throws -> ()) rethrows {
         
         /**
          Recurses into a container value when reading values from a message, initializing a sub-iterator to use for traversing the child values of the container.
@@ -114,7 +118,9 @@ extension DBusMessageIter {
         var subiterator = DBusMessageIter()
         dbus_message_iter_recurse(&self, &subiterator)
         
-        return try recurseBlock(&subiterator)
+        while let element = subiterator.next() {
+            try iterate(element)
+        }
     }
     
     private mutating func signature() throws -> DBusSignature {
@@ -210,6 +216,13 @@ internal extension DBusMessageIter {
         case let .array(array):
             try appendContainer(type: .array, signature: DBusSignature([array.type])) {
                 for element in array {
+                    try $0.append(argument: element)
+                }
+            }
+            
+        case let .struct(structure):
+            try appendContainer(type: .struct) {
+                for element in structure {
                     try $0.append(argument: element)
                 }
             }
