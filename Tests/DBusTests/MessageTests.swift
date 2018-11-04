@@ -13,7 +13,8 @@ final class MessageTests: XCTestCase {
     
     static let allTests = [
         (testBasicValueArguments, "testBasicValueArguments"),
-        (testArrayArguments, "testArrayArguments")
+        (testArrayArguments, "testArrayArguments"),
+        (testErrorMessage, "testErrorMessage")
     ]
     
     func testBasicValueArguments() {
@@ -72,6 +73,29 @@ final class MessageTests: XCTestCase {
             XCTAssertEqual(Array(message), arguments, "Could not iterate message")
         }
             
+        catch { XCTFail("\(error)") }
+    }
+    
+    func testErrorMessage() {
+        
+        do {
+            
+            let originalMessage = try DBusMessage(type: .methodCall)
+            
+            #if swift(>=4.2)
+            originalMessage.serial = .random(in: 1 ..< .max)
+            #else
+            originalMessage.serial = 1 // fake it till you make it
+            #endif
+            
+            let error = DBusError(name: .failed, message: "Test Error")
+            
+            let errorMessage = try DBusMessage(error: DBusMessage.Error(replyTo: originalMessage, error: error))
+            
+            XCTAssertEqual(DBusError(message: errorMessage), error)
+            XCTAssertEqual(errorMessage.replySerial, originalMessage.serial)
+        }
+        
         catch { XCTFail("\(error)") }
     }
 }
