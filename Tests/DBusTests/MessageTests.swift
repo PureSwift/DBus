@@ -11,11 +11,11 @@ import XCTest
 
 final class MessageTests: XCTestCase {
     
-    static let allTests = [
-        (testBasicValueArguments, "testBasicValueArguments"),
-        (testArrayArguments, "testArrayArguments"),
-        (testStructureArguments, "testStructureArguments"),
-        (testErrorMessage, "testErrorMessage")
+    static let allTests: [(String, (MessageTests) -> () -> Void)] = [
+        ("testBasicValueArguments", testBasicValueArguments),
+        ("testArrayArguments", testArrayArguments),
+        ("testStructureArguments", testStructureArguments),
+        ("testErrorMessage", testErrorMessage)
     ]
     
     func testBasicValueArguments() {
@@ -31,7 +31,7 @@ final class MessageTests: XCTestCase {
             .uint64(.max),
             .string("Test String"),
             .objectPath(DBusObjectPath("/com/example/bus1")),
-            .signature(DBusSignature("a{s(ai)}"))
+            .signature(DBusSignature("a{s(ai)}")),
         ]
         
         do {

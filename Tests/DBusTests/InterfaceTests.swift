@@ -11,9 +11,9 @@ import XCTest
 
 final class InterfaceTests: XCTestCase {
     
-    static let allTests = [
-        (testInvalid, "testInvalid"),
-        (testValid, "testValid")
+    static let allTests: [(String, (InterfaceTests) -> () -> Void)] = [
+        ("testInvalid", testInvalid),
+        ("testValid", testValid)
     ]
     
     func testInvalid() {
