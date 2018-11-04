@@ -11,11 +11,11 @@ import XCTest
 
 final class ObjectPathTests: XCTestCase {
     
-    static let allTests = [
-        (testInvalid, "testInvalid"),
-        (testValid, "testValid"),
-        (testEmpty, "testEmpty"),
-        (testMultithread, "testMultithread")
+    static let allTests: [(String, (ObjectPathTests) -> () -> Void)] = [
+        ("testInvalid", testInvalid),
+        ("testValid", testValid),
+        ("testEmpty", testEmpty),
+        ("testMultithread", testMultithread)
     ]
     
     func testInvalid() {

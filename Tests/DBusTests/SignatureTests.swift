@@ -11,9 +11,9 @@ import XCTest
 
 final class SignatureTests: XCTestCase {
     
-    static let allTests = [
-        (testInvalid, "testInvalid"),
-        (testValid, "testValid")
+    static let allTests: [(String, (SignatureTests) -> () -> Void)] = [
+        ("testInvalid", testInvalid),
+        ("testValid", testValid)
     ]
     
     func testInvalid() {
