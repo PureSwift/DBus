@@ -101,7 +101,26 @@ final class MessageTests: XCTestCase {
                     .string("Test String 2"),
                     .objectPath(DBusObjectPath("/com/example/bus2"))
                     ])!)
-                ])!)
+                ])!),
+            .struct(DBusMessageArgument.Structure([
+                .int32(1),
+                .string("Test String"),
+                .array(DBusMessageArgument.Array(type: .array(.string), [
+                    .array(DBusMessageArgument.Array(type: .string, [.string("A1"), .string("A2"), .string("A3")])!),
+                    .array(DBusMessageArgument.Array(type: .string, [.string("B1"), .string("B2"), .string("B3")])!),
+                    .array(DBusMessageArgument.Array(type: .string, [.string("C1"), .string("C2"), .string("C3")])!)
+                    ])!),
+                .array(DBusMessageArgument.Array(type: .struct([.int32, .string]), [
+                    .struct(DBusMessageArgument.Structure([
+                        .int32(1),
+                        .string("Test String 1")
+                        ])!),
+                    .struct(DBusMessageArgument.Structure([
+                        .int32(2),
+                        .string("Test String 2")
+                        ])!)
+                    ])!)
+                ])!),
         ]
         
         do {
