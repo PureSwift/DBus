@@ -52,7 +52,8 @@ public final class DBusMessage {
     /// - Parameter error: A tuple consisting of the message to reply to, the error name, and the error message.
     public init(error: Error) throws {
         
-        guard let internalPointer = dbus_message_new_error(error.replyTo.internalPointer, error.name, error.message) else { throw DBusError.messageInitializationOutOfMemory }
+        guard let internalPointer = dbus_message_new_error(error.replyTo.internalPointer, error.name.rawValue, error.message)
+            else { throw DBusError.messageInitializationOutOfMemory }
         
         self.internalPointer = internalPointer
     }
@@ -63,7 +64,7 @@ public final class DBusMessage {
     public init(methodCall: MethodCall) throws {
         
         // Returns NULL if memory can't be allocated for the message.
-        guard let internalPointer = dbus_message_new_method_call(methodCall.destination, methodCall.path, methodCall.interface, methodCall.method) else {
+        guard let internalPointer = dbus_message_new_method_call(methodCall.destination?.rawValue, methodCall.path.rawValue, methodCall.interface?.rawValue, methodCall.method) else {
             throw DBusError.messageInitializationOutOfMemory
         }
         
@@ -111,7 +112,7 @@ public final class DBusMessage {
     // MARK: - Properties
     
     /// The message type.
-    public var type: DBusMessageType {
+    public lazy var type: DBusMessageType = {
         
         let rawValue = dbus_message_get_type(internalPointer)
         
@@ -119,7 +120,7 @@ public final class DBusMessage {
             else { fatalError("Invalid DBus Message type: \(rawValue)") }
         
         return type
-    }
+    }()
     
     /// Checks whether a message contains Unix file descriptors.
     public var containsFileDescriptors: Bool {
@@ -382,6 +383,7 @@ extension DBusMessage: Sequence {
     public typealias Element = DBusMessageArgument
     
     public func makeIterator() -> Iterator {
+        
         return Iterator(self)
     }
 }
@@ -417,8 +419,20 @@ public extension DBusMessage {
     public struct Error {
         
         public let replyTo: DBusMessage
-        public let name: String
+        public let name: DBusError.Name
         public let message: String
+        
+        public init(replyTo: DBusMessage, name: DBusError.Name, message: String) {
+            
+            self.replyTo = replyTo
+            self.name = name
+            self.message = message
+        }
+        
+        public init(replyTo: DBusMessage, error: DBusError) {
+            
+            self.init(replyTo: replyTo, name: error.name, message: error.message)
+        }
     }
 }
 
@@ -426,9 +440,9 @@ public extension DBusMessage {
     
     public struct MethodCall {
         
-        public let destination: String?
-        public let path: String
-        public let interface: String?
+        public let destination: DBusBusName?
+        public let path: DBusObjectPath
+        public let interface: DBusInterface?
         public let method: String
     }
 }
@@ -443,6 +457,44 @@ public extension DBusMessage {
         public let name: String
     }
 }
+
+internal extension DBusError.Reference {
+    
+    /**
+     Sets a DBusError based on the contents of the given message.
+     
+     The error is only set if the message is an error message, as in `DBusMessageType.error`. The name of the error is set to the name of the message, and the error message is set to the first argument if the argument exists and is a string.
+    */
+    convenience init?(message: DBusMessage) {
+        
+        guard message.type == .error
+            else { return nil }
+        
+        self.init()
+        guard Bool(dbus_set_error_from_message(&self.internalValue, message.internalPointer))
+            else { return nil }
+        
+        assert(isEmpty == false)
+    }
+}
+
+public extension DBusError {
+    
+    /**
+     Sets a DBusError based on the contents of the given message.
+     
+     The error is only set if the message is an error message, as in `DBusMessageType.error`. The name of the error is set to the name of the message, and the error message is set to the first argument if the argument exists and is a string.
+     */
+    init?(message: DBusMessage) {
+        
+        guard let reference = Reference(message: message)
+            else { return nil }
+        
+        self.init(reference)
+    }
+}
+
+// MARK: - Private Extensions
 
 private extension DBusError {
     

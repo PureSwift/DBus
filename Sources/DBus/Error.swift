@@ -10,7 +10,7 @@ import Foundation
 import CDBus
 
 /// DBus type representing an exception.
-public struct DBusError: Error {
+public struct DBusError: Error, Equatable, Hashable {
     
     /// Error name field
     public let name: DBusError.Name
@@ -109,7 +109,7 @@ extension DBusError: CustomNSError {
     /// The error code within the given domain.
     public var errorCode: Int {
         
-        return name.rawValue.hash
+        return hashValue
     }
     
     /// The user-info dictionary.
