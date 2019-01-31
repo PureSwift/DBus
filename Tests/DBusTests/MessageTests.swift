@@ -145,7 +145,7 @@ final class MessageTests: XCTestCase {
             originalMessage.serial = 1 // fake it till you make it
             #endif
             
-            let error = DBusError(name: .failed, message: "Test Error")
+            let error = try DBusError(name: DBusError.Name.failed, message: "Test Error")
             
             let errorMessage = try DBusMessage(error: DBusMessage.Error(replyTo: originalMessage, error: error))
             

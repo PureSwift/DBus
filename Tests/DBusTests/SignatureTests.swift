@@ -40,7 +40,7 @@ final class SignatureTests: XCTestCase {
             XCTAssertThrowsError(try DBusSignature.validate(string))
             do { try DBusSignature.validate(string) }
             catch let error as DBusError {
-                XCTAssertEqual(error.name, .invalidSignature)
+                XCTAssertEqual(error.name, DBusError.Name.invalidSignature)
                 print("\"\(string)\" is invalid: \(error.message)"); return
             }
             catch { XCTFail("Invalid error \(error)"); return }
