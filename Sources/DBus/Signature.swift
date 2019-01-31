@@ -49,9 +49,9 @@ internal extension DBusSignature {
     
     static func validate(_ string: String) throws {
         
-        let error = DBusError.Reference()
+        let error = DBusError()
         guard Bool(dbus_signature_validate(string, &error.internalValue))
-            else { throw DBusError(error)! }
+            else { throw error }
         
     }
     

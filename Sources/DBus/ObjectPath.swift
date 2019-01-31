@@ -94,9 +94,9 @@ internal extension DBusObjectPath {
     
     static func validate(_ string: String) throws {
         
-        let error = DBusError.Reference()
+        let error = DBusError()
         guard Bool(dbus_validate_path(string, &error.internalValue))
-            else { throw DBusError(error)! }
+            else { throw error }
     }
 }
 
