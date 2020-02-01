@@ -103,7 +103,7 @@ public final class DBusConnection {
     // MARK: - Class Methods
     
     /// This method sets a global flag for whether `dbus_connection_new()` will set `SIGPIPE` behavior to `SIG_IGN`.
-    public static func setChangeSIGPIPE(change: Bool) {
+    static func setChangeSIGPIPE(change: Bool) {
         
         dbus_connection_set_change_sigpipe(dbus_bool_t(change))
     }
