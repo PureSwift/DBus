@@ -30,7 +30,7 @@ public struct DBusError: Error, Equatable, Hashable {
 internal extension DBusError {
     
     /// Internal class for working with the C DBus error API
-    internal final class Reference {
+    final class Reference {
         
         // MARK: - Internal Properties
         
@@ -126,7 +126,7 @@ extension DBusError: CustomNSError {
 
 public extension DBusError {
     
-    public struct Name: Equatable, Hashable {
+    struct Name: Equatable, Hashable {
         
         public let rawValue: String
         
@@ -143,7 +143,7 @@ public extension DBusError {
 
 public extension DBusError.Name {
     
-    public init(_ interface: DBusInterface) {
+    init(_ interface: DBusInterface) {
         
         // should be valid
         self.rawValue = interface.rawValue
@@ -163,32 +163,32 @@ public extension DBusError.Name {
     /// A generic error; "something went wrong" - see the error message for more.
     ///
     /// `org.freedesktop.DBus.Error.Failed`
-    public static let failed = DBusError.Name(rawValue: DBUS_ERROR_FAILED)!
+    static let failed = DBusError.Name(rawValue: DBUS_ERROR_FAILED)!
     
     /// No Memory
     ///
     /// `org.freedesktop.DBus.Error.NoMemory`
-    public static let noMemory = DBusError.Name(rawValue: DBUS_ERROR_NO_MEMORY)!
+    static let noMemory = DBusError.Name(rawValue: DBUS_ERROR_NO_MEMORY)!
     
     /// Existing file and the operation you're using does not silently overwrite.
     ///
     /// `org.freedesktop.DBus.Error.FileExists`
-    public static let fileExists = DBusError.Name(rawValue: DBUS_ERROR_FILE_EXISTS)!
+    static let fileExists = DBusError.Name(rawValue: DBUS_ERROR_FILE_EXISTS)!
     
     /// Missing file.
     ///
     /// `org.freedesktop.DBus.Error.FileNotFound`
-    public static let fileNotFound = DBusError.Name(rawValue: DBUS_ERROR_FILE_NOT_FOUND)!
+    static let fileNotFound = DBusError.Name(rawValue: DBUS_ERROR_FILE_NOT_FOUND)!
     
     /// Invalid arguments
     ///
     /// `org.freedesktop.DBus.Error.InvalidArgs`
-    public static let invalidArguments = DBusError.Name(rawValue: DBUS_ERROR_INVALID_ARGS)!
+    static let invalidArguments = DBusError.Name(rawValue: DBUS_ERROR_INVALID_ARGS)!
     
     /// Invalid signature
     ///
     /// `org.freedesktop.DBus.Error.InvalidSignature`
-    public static let invalidSignature = DBusError.Name(rawValue: DBUS_ERROR_INVALID_SIGNATURE)!
+    static let invalidSignature = DBusError.Name(rawValue: DBUS_ERROR_INVALID_SIGNATURE)!
 }
 
 extension DBusError.Name: CustomStringConvertible {

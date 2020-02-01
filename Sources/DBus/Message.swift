@@ -365,7 +365,7 @@ public extension DBusMessage {
     /**
      Creates a new message that is an exact replica of the message specified, except that its refcount is set to 1, its message serial is reset to 0, and if the original message was "locked" (in the outgoing message queue and thus not modifiable) the new message will not be locked.
     */
-    public func copy() throws -> DBusMessage {
+    func copy() throws -> DBusMessage {
         
         guard let copyPointer = dbus_message_copy(internalPointer)
             else { throw DBusError(name: .noMemory, message: "Could not copy message") }
@@ -391,7 +391,7 @@ extension DBusMessage: Sequence {
 public extension DBusMessage {
     
     /// DBus Message Iterator
-    public struct Iterator: IteratorProtocol {
+    struct Iterator: IteratorProtocol {
         
         public typealias Element = DBusMessageArgument
         
@@ -416,7 +416,7 @@ public extension DBusMessage {
 
 public extension DBusMessage {
     
-    public struct Error {
+    struct Error {
         
         public let replyTo: DBusMessage
         public let name: DBusError.Name
@@ -438,7 +438,7 @@ public extension DBusMessage {
 
 public extension DBusMessage {
     
-    public struct MethodCall {
+    struct MethodCall {
         
         public let destination: DBusBusName?
         public let path: DBusObjectPath
@@ -450,7 +450,7 @@ public extension DBusMessage {
 public extension DBusMessage {
     
     /// A signal is identified by its originating object path, interface, and the name of the signal.
-    public struct Signal {
+    struct Signal {
         
         public let path: String
         public let interface: String
