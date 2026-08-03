@@ -20,15 +20,20 @@ internal struct DBusUnmarshaller {
     /// The position alignment is measured from. See `DBusMarshaller.origin`.
     private let origin: Int
 
+    /// Descriptors received out of band with this message, which `UNIX_FD` values index into.
+    let fileDescriptors: [Int32]
+
     init(bytes: [UInt8],
          endianness: DBusEndianness,
          offset: Int = 0,
-         origin: Int = 0) {
+         origin: Int = 0,
+         fileDescriptors: [Int32] = []) {
 
         self.bytes = bytes
         self.endianness = endianness
         self.offset = offset
         self.origin = origin
+        self.fileDescriptors = fileDescriptors
     }
 }
 
@@ -199,8 +204,13 @@ internal extension DBusUnmarshaller {
             return .double(Double(bitPattern: try readInteger(UInt64.self)))
 
         case .fileDescriptor:
-            let index = try readInteger(UInt32.self)
-            return .fileDescriptor(DBusMessageArgument.FileDescriptor(rawValue: Int32(bitPattern: index)))
+            // The wire carries an index into the descriptors delivered out of band.
+            let index = Int(try readInteger(UInt32.self))
+
+            guard index < fileDescriptors.count
+                else { throw DBusProtocolError.invalidValue("File descriptor index \(index) is out of range; \(fileDescriptors.count) were received") }
+
+            return .fileDescriptor(DBusMessageArgument.FileDescriptor(rawValue: fileDescriptors[index]))
 
         case .string:
             return .string(try readString())
