@@ -10,6 +10,11 @@ handshake and the transport are all implemented in Swift.
 
 Depends on [PureSwift/Socket](https://github.com/PureSwift/Socket) for async sockets.
 
+> The manifest currently points at a local `../Socket` checkout, which carries three changes not
+> yet upstream: `SCM_RIGHTS` ancillary data support that file-descriptor passing is built on, and
+> two socket-monitor fixes — deferred poll results being applied to a reused descriptor, and a
+> never-connected socket being torn down because an unconnected socket polls as `POLLHUP`.
+
 ## Usage
 
 ```swift
@@ -37,6 +42,25 @@ await connection.close()
 
 An error reply is thrown as a `DBusError` carrying its `org.freedesktop.DBus.Error.*` name;
 framing and marshalling failures are thrown as `DBusProtocolError`.
+
+### File descriptors
+
+A `UNIX_FD` argument carries a real descriptor. On the wire it is marshalled as an index into
+the descriptors sent out of band, so the value you pass is the descriptor itself:
+
+```swift
+try await connection.callMethod(
+    destination: name,
+    path: path,
+    interface: interface,
+    method: DBusMember(rawValue: "Accept")!,
+    arguments: [.fileDescriptor(.init(rawValue: myFileDescriptor))]
+)
+```
+
+The peer receives its own descriptor referring to the same open file, and **owns it**: close it
+when finished. Sending requires the peer to have agreed to `NEGOTIATE_UNIX_FD`, which
+`unixFileDescriptorsSupported` reports.
 
 ### Signals
 
@@ -103,11 +127,14 @@ Implemented:
 - Signal subscriptions as `AsyncStream`
 - Server side: object export, method dispatch, signal emission
 - `org.freedesktop.DBus.Peer`, `.Introspectable` and `.Properties`
+- SASL `DBUS_COOKIE_SHA1`, with a pure-Swift SHA-1
+- `tcp:` and `nonce-tcp:` transports, IPv4 and IPv6
+- Unix file descriptor passing, via `SCM_RIGHTS`
+
+- Parsing introspection XML into a typed node model
 
 Not yet implemented:
 
-- Unix file descriptor passing (negotiated, but descriptors are not transferred)
-- `DBUS_COOKIE_SHA1`, and the TCP transports
 - Code generation from introspection XML
 
 ## Tests
