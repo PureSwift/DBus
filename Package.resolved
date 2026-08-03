@@ -1,16 +1,24 @@
 {
-  "object": {
-    "pins": [
-      {
-        "package": "CDBus",
-        "repositoryURL": "https://github.com/PureSwift/CDBus.git",
-        "state": {
-          "branch": "master",
-          "revision": "ccffce2e8469e89589d24234eed31c067104722a",
-          "version": null
-        }
+  "originHash" : "51678194f516279f7b3e6fb21013db01e400ff717bfe8ac1193a068df3ece14d",
+  "pins" : [
+    {
+      "identity" : "socket",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/PureSwift/Socket.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "579c0fc29cf2dc9f227f89403fb44d4726a4af44"
       }
-    ]
-  },
-  "version": 1
+    },
+    {
+      "identity" : "swift-system",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-system",
+      "state" : {
+        "revision" : "50688cacbd41d547e9eb9f7a213542340b7c442b",
+        "version" : "1.7.5"
+      }
+    }
+  ],
+  "version" : 3
 }
