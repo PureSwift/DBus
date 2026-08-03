@@ -28,7 +28,7 @@ public actor DBusConnection {
 
     /// Whether the server agreed to Unix file descriptor passing.
     ///
-    /// - Note: Negotiated but not yet acted on; descriptors are not transferred.
+    /// Sending a message containing a `UNIX_FD` argument requires this to be true.
     public private(set) var unixFileDescriptorsSupported = false
 
     /// Whether the connection is still usable.
@@ -53,8 +53,17 @@ public actor DBusConnection {
     /// Bytes received but not yet framed into a complete message.
     private var readBuffer: [UInt8] = []
 
+    /// Descriptors received but not yet claimed by a framed message.
+    ///
+    /// They arrive attached to whichever read delivered their message's bytes, so they are
+    /// queued in order and handed to messages as those are framed.
+    private var receivedDescriptors: [Int32] = []
+
     /// The task draining the socket.
     private var readTask: Task<Void, Never>?
+
+    /// Set when the read loop has exited and is no longer touching the socket.
+    private var isReadLoopFinished = true
 
     /// Invoked for messages that are not replies and that nothing else consumed.
     internal var messageHandler: (@Sendable (DBusMessage) -> Void)?
@@ -76,6 +85,9 @@ public actor DBusConnection {
 
     /// How many bytes to request per read.
     private static let readChunkSize = 16 * 1024
+
+    /// How many 10ms polls `close()` will wait for the read loop to exit.
+    private static let readLoopShutdownPolls = 50
 
     /// The default time to wait for a reply, matching the reference implementation.
     public static let defaultTimeout: Duration = .seconds(25)
@@ -114,44 +126,94 @@ public extension DBusConnection {
 
     /// Connect to a well known bus.
     static func connect(to busType: DBusBusType,
-                        mechanisms: [DBusAuthenticationMechanism] = [.external, .anonymous]) async throws -> DBusConnection {
+                        mechanisms: [DBusAuthenticationMechanism] = [.external, .cookieSHA1, .anonymous]) async throws -> DBusConnection {
 
-        let addresses = try DBusAddress.addresses(for: busType)
+        return try await connect(to: try DBusAddress.addresses(for: busType), mechanisms: mechanisms)
+    }
+
+    /// Parse an address string and connect to the first alternative that works.
+    static func connect(to addressString: String,
+                        mechanisms: [DBusAuthenticationMechanism] = [.external, .cookieSHA1, .anonymous]) async throws -> DBusConnection {
+
+        return try await connect(to: try DBusAddress.parse(addressString), mechanisms: mechanisms)
+    }
+
+    /// Connect to a bus at a specific Unix socket.
+    static func connect(to address: DBusUnixSocketAddress,
+                        mechanisms: [DBusAuthenticationMechanism] = [.external, .cookieSHA1, .anonymous]) async throws -> DBusConnection {
+
+        return try await connect(to: .unix(address), mechanisms: mechanisms)
+    }
+
+    /// Try each address in turn, and within an address each endpoint it resolves to.
+    ///
+    /// An address string lists alternatives, and a TCP host can resolve to several addresses;
+    /// both are tried before giving up, and the last failure is reported.
+    internal static func connect(to addresses: [DBusAddress],
+                                 mechanisms: [DBusAuthenticationMechanism]) async throws -> DBusConnection {
 
         var lastError: Error = DBusProtocolError.invalidAddress("No addresses")
 
-        // An address string may list alternatives; try each in turn.
         for address in addresses {
 
-            do {
-                return try await connect(to: try address.unixSocketAddress(), mechanisms: mechanisms)
-            }
+            let endpoints: [DBusTransportEndpoint]
+
+            do { endpoints = try address.endpoints() }
             catch {
                 lastError = error
+                continue
+            }
+
+            for endpoint in endpoints {
+
+                do { return try await connect(to: endpoint, mechanisms: mechanisms) }
+                catch { lastError = error }
             }
         }
 
         throw lastError
     }
 
-    /// Connect to a bus at a specific socket address.
-    static func connect(to address: DBusUnixSocketAddress,
-                        mechanisms: [DBusAuthenticationMechanism] = [.external, .anonymous]) async throws -> DBusConnection {
+    internal static func connect(to endpoint: DBusTransportEndpoint,
+                                 mechanisms: [DBusAuthenticationMechanism]) async throws -> DBusConnection {
 
-        let socket = try await Socket(DBusUnixProtocol.stream)
+        let socket: Socket
+        let nonce: [UInt8]?
 
-        do {
-            try await socket.connect(to: address)
-        }
-        catch {
-            await socket.close()
-            throw error
+        switch endpoint {
+
+        case let .unix(address):
+            socket = try await Socket(DBusUnixProtocol.stream)
+            nonce = nil
+            do { try await socket.connect(to: address) }
+            catch {
+                await socket.close()
+                throw error
+            }
+
+        case let .tcp(.ipv4(address), tcpNonce):
+            socket = try await Socket(IPv4Protocol.tcp)
+            nonce = tcpNonce
+            do { try await socket.connect(to: address) }
+            catch {
+                await socket.close()
+                throw error
+            }
+
+        case let .tcp(.ipv6(address), tcpNonce):
+            socket = try await Socket(IPv6Protocol.tcp)
+            nonce = tcpNonce
+            do { try await socket.connect(to: address) }
+            catch {
+                await socket.close()
+                throw error
+            }
         }
 
         let connection = DBusConnection(socket: socket)
 
         do {
-            try await connection.handshake(mechanisms: mechanisms)
+            try await connection.handshake(mechanisms: mechanisms, nonce: nonce)
             try await connection.hello()
         }
         catch {
@@ -161,27 +223,6 @@ public extension DBusConnection {
 
         return connection
     }
-
-    /// Parse an address string and connect to the first alternative that works.
-    static func connect(to addressString: String,
-                        mechanisms: [DBusAuthenticationMechanism] = [.external, .anonymous]) async throws -> DBusConnection {
-
-        let addresses = try DBusAddress.parse(addressString)
-
-        var lastError: Error = DBusProtocolError.invalidAddress(addressString)
-
-        for address in addresses {
-
-            do {
-                return try await connect(to: try address.unixSocketAddress(), mechanisms: mechanisms)
-            }
-            catch {
-                lastError = error
-            }
-        }
-
-        throw lastError
-    }
 }
 
 // MARK: - Handshake
@@ -189,7 +230,15 @@ public extension DBusConnection {
 internal extension DBusConnection {
 
     /// Run the SASL handshake, then start the read loop.
-    func handshake(mechanisms: [DBusAuthenticationMechanism]) async throws {
+    ///
+    /// - Parameter nonce: For the `nonce-tcp` transport, the bytes read from the server's nonce
+    /// file. They are sent before anything else, including the SASL NUL byte.
+    func handshake(mechanisms: [DBusAuthenticationMechanism],
+                   nonce: [UInt8]? = nil) async throws {
+
+        if let nonce = nonce {
+            try await writeAll(nonce)
+        }
 
         var client = DBusSASLClient(mechanisms: mechanisms, userID: ProcessEnvironment.userID)
         var buffer = DBusSASLLineBuffer()
@@ -287,15 +336,16 @@ public extension DBusConnection {
 
     /// Close the connection and fail every outstanding call.
     ///
-    /// - Note: `isConnected` is cleared *before* the socket is closed. Closing releases the
-    /// file descriptor number immediately, while the pending read is aborted asynchronously, so
-    /// the loop can wake up after a new connection has already been given the same number. It
-    /// re-checks `isConnected` at the top of every iteration and so never issues another read
-    /// against the reused descriptor.
+    /// - Note: Waits, briefly, for the read loop to stop touching the socket.
     ///
-    /// Waiting here for the read loop to finish would be stronger, but `Socket.remove` skips
-    /// aborting the pending read if the descriptor has already been removed, so the wait can
-    /// never be guaranteed to end.
+    /// Closing frees the file descriptor number immediately while the pending read is aborted
+    /// asynchronously, so a loop still suspended on the old number can wake after a new
+    /// connection has been handed the same number. Clearing `isConnected` first stops it
+    /// issuing another read; this wait then covers the window where it is still inside one.
+    ///
+    /// The wait is bounded rather than a plain `await readTask.value`, because `Socket.remove`
+    /// resumes pending operations from a separate task: a read that registers after that has
+    /// already run is never resumed, and awaiting it would hang forever.
     func close() async {
 
         guard isConnected || readTask != nil
@@ -308,7 +358,15 @@ public extension DBusConnection {
         readTask?.cancel()
         readTask = nil
 
+        // Closing is what aborts the pending read and lets the loop finish.
         await socket.close()
+
+        for _ in 0 ..< DBusConnection.readLoopShutdownPolls {
+
+            if isReadLoopFinished { return }
+
+            try? await Task.sleep(for: .milliseconds(10))
+        }
     }
 }
 
@@ -326,7 +384,10 @@ private extension DBusConnection {
         var message = message
         message.serial = nextSerial()
 
-        let bytes = try message.encode()
+        let (bytes, descriptors) = try message.encodeWithDescriptors()
+
+        guard descriptors.isEmpty || unixFileDescriptorsSupported
+            else { throw DBusProtocolError.invalidValue("The peer did not agree to file descriptor passing") }
 
         // Register before writing: `writeAll` suspends, so the reply can arrive before this
         // call resumes.
@@ -335,7 +396,7 @@ private extension DBusConnection {
         }
 
         do {
-            try await writeAll(bytes)
+            try await writeAll(bytes, fileDescriptors: descriptors)
         }
         catch {
             outstanding.remove(message.serial)
@@ -400,13 +461,28 @@ private extension DBusConnection {
                                                 message: "Did not receive a reply within the timeout"))
     }
 
-    func writeAll(_ bytes: [UInt8]) async throws {
+    /// Write every byte, attaching any descriptors to the first chunk.
+    ///
+    /// - Note: The descriptors go with the first write because ancillary data is delivered with
+    /// the byte it accompanies, and the receiver associates them with the message those bytes
+    /// begin. A message always has at least one byte, which `sendMessage` requires.
+    func writeAll(_ bytes: [UInt8], fileDescriptors: [Int32] = []) async throws {
 
         var offset = 0
+        var pending = fileDescriptors
 
         while offset < bytes.count {
 
-            let written = try await socket.write(Data(bytes[offset...]))
+            let chunk = Swift.Array(bytes[offset...])
+            let written: Int
+
+            if pending.isEmpty {
+                written = try await socket.write(Data(chunk))
+            } else {
+                let descriptors = pending.map { SocketDescriptor(rawValue: $0) }
+                written = try await socket.sendMessage(chunk, fileDescriptors: descriptors)
+                pending = []
+            }
 
             guard written > 0
                 else { throw DBusProtocolError.endOfStream }
@@ -419,37 +495,55 @@ private extension DBusConnection {
 
     func startReading() {
 
+        isReadLoopFinished = false
+
         readTask = Task { [weak self] in
 
+            // Every exit falls through to the mark below, so `close()` can tell when the loop
+            // has stopped touching the socket.
             while let self = self, await self.isConnected, Task.isCancelled == false {
 
                 do {
-                    let data = try await self.readChunk()
+                    let message = try await self.readChunk()
 
-                    guard data.isEmpty == false else {
+                    guard message.data.isEmpty == false else {
                         await self.disconnected(DBusProtocolError.endOfStream)
-                        return
+                        break
                     }
 
-                    await self.received(Array(data))
+                    await self.received(Array(message.data),
+                                        fileDescriptors: message.fileDescriptors.map { $0.rawValue })
                 }
                 catch {
                     await self.disconnected(error)
-                    return
+                    break
                 }
             }
+
+            await self?.markReadLoopFinished()
         }
     }
 
-    nonisolated func readChunk() async throws -> Data {
+    func markReadLoopFinished() {
 
-        return try await socket.read(DBusConnection.readChunkSize)
+        isReadLoopFinished = true
+    }
+
+    nonisolated func readChunk() async throws -> SocketMessage {
+
+        // Always received as a message, so `SCM_RIGHTS` ancillary data is never dropped. On a
+        // stream socket this behaves like a plain read when no descriptors are attached.
+        return try await socket.receiveMessage(
+            DBusConnection.readChunkSize,
+            maximumDescriptors: SocketDescriptor.maximumAncillaryDescriptors
+        )
     }
 
     /// Append received bytes and dispatch every complete message they contain.
-    func received(_ bytes: [UInt8]) {
+    func received(_ bytes: [UInt8], fileDescriptors: [Int32] = []) {
 
         readBuffer.append(contentsOf: bytes)
+        receivedDescriptors.append(contentsOf: fileDescriptors)
 
         while true {
 
@@ -469,7 +563,15 @@ private extension DBusConnection {
             readBuffer.removeFirst(messageLength)
 
             do {
-                let (message, _) = try DBusMessage.decode(messageBytes)
+                // Descriptor indices are per message and start at zero, so decoding against the
+                // whole queue resolves this message's correctly. Its header then says how many
+                // belonged to it, and those are consumed.
+                let (message, _) = try DBusMessage.decode(messageBytes,
+                                                          fileDescriptors: receivedDescriptors)
+
+                let claimed = min(Int(message.unixFileDescriptorCount ?? 0), receivedDescriptors.count)
+                receivedDescriptors.removeFirst(claimed)
+
                 dispatch(message)
             }
             catch {
