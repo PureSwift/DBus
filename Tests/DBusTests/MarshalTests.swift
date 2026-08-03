@@ -24,22 +24,31 @@ import Testing
 
     private func decode(_ bytes: [UInt8],
                         _ signature: DBusSignature,
-                        endianness: DBusEndianness = .little) throws -> [DBusMessageArgument] {
+                        endianness: DBusEndianness = .little,
+                        fileDescriptors: [Int32] = []) throws -> [DBusMessageArgument] {
 
-        var unmarshaller = DBusUnmarshaller(bytes: bytes, endianness: endianness)
+        var unmarshaller = DBusUnmarshaller(bytes: bytes,
+                                            endianness: endianness,
+                                            fileDescriptors: fileDescriptors)
         let arguments = try unmarshaller.read(signature: signature)
         #expect(unmarshaller.isAtEnd, "\(unmarshaller.remaining) trailing bytes")
         return arguments
     }
 
     /// Encode and decode in both byte orders and check the value survives.
+    ///
+    /// - Note: Descriptors are threaded back in, because a `UNIX_FD` is marshalled as an index
+    /// into the out-of-band descriptor array rather than as the descriptor number.
     private func assertRoundTrip(_ arguments: [DBusMessageArgument],
                                  sourceLocation: SourceLocation = #_sourceLocation) throws {
 
         for endianness in DBusEndianness.allCases {
 
-            let bytes = try encode(arguments, endianness: endianness)
-            let decoded = try decode(bytes, arguments.signature, endianness: endianness)
+            let (bytes, descriptors) = try DBusMarshaller.marshalWithDescriptors(arguments,
+                                                                                 endianness: endianness)
+            let decoded = try decode(bytes, arguments.signature,
+                                     endianness: endianness,
+                                     fileDescriptors: descriptors)
 
             #expect(decoded == arguments, "\(endianness)", sourceLocation: sourceLocation)
         }
