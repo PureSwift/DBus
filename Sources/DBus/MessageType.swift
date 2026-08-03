@@ -7,7 +7,7 @@
 //
 
 /// The DBus Message type.
-public enum DBusMessageType: CInt {
+public enum DBusMessageType: UInt8, Sendable, CaseIterable {
     
     /// Message type of a method call message.
     ///
