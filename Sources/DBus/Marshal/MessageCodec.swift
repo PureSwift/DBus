@@ -81,11 +81,21 @@ public extension DBusMessage {
     /// what the specification recommends: senders write native order and receivers convert.
     func encode(endianness: DBusEndianness = .host) throws -> [UInt8] {
 
-        // The body is marshalled first, because its length appears in the fixed header.
+        return try encodeWithDescriptors(endianness: endianness).bytes
+    }
+
+    /// Marshal the message, returning the bytes and the descriptors that must accompany them.
+    ///
+    /// A `UNIX_FD` argument is written as an index into `fileDescriptors`; the descriptors
+    /// themselves travel out of band, as `SCM_RIGHTS` ancillary data.
+    func encodeWithDescriptors(endianness: DBusEndianness = .host) throws -> (bytes: [UInt8], fileDescriptors: [Int32]) {
+
+        // The body is marshalled first, because its length appears in the fixed header, and
+        // because marshalling is what assigns the descriptor indices.
         //
         // Alignment inside the body is relative to the start of the message, but the header is
         // always padded to 8 and 8 is the largest alignment, so an origin of zero is equivalent.
-        let body = try DBusMarshaller.marshal(arguments, endianness: endianness)
+        let (body, descriptors) = try DBusMarshaller.marshalWithDescriptors(arguments, endianness: endianness)
 
         guard body.count <= maximumMessageLength
             else { throw DBusProtocolError.messageTooLarge(UInt32(truncatingIfNeeded: body.count)) }
@@ -99,7 +109,7 @@ public extension DBusMessage {
         marshaller.appendUnaligned(UInt32(body.count))
         marshaller.appendUnaligned(serial)
 
-        try marshaller.append(.array(headerFieldsArgument()))
+        try marshaller.append(.array(headerFieldsArgument(unixFileDescriptorCount: UInt32(descriptors.count))))
 
         // The header is padded to an 8 byte boundary before the body begins.
         marshaller.pad(to: 8)
@@ -110,11 +120,15 @@ public extension DBusMessage {
         guard bytes.count <= maximumMessageLength
             else { throw DBusProtocolError.messageTooLarge(UInt32(truncatingIfNeeded: bytes.count)) }
 
-        return bytes
+        return (bytes, descriptors)
     }
 
     /// The header fields, as the `a(yv)` value they are marshalled as.
-    internal func headerFieldsArgument() -> DBusMessageArgument.Array {
+    ///
+    /// - Parameter unixFileDescriptorCount: How many descriptors accompany the message. Taken
+    /// from what marshalling actually produced rather than from the stored property, so the
+    /// field can never disagree with the body.
+    internal func headerFieldsArgument(unixFileDescriptorCount: UInt32? = nil) -> DBusMessageArgument.Array {
 
         var fields = [DBusMessageArgument]()
 
@@ -161,7 +175,7 @@ public extension DBusMessage {
             append(.signature, .signature(signature))
         }
 
-        if let count = self.unixFileDescriptorCount, count > 0 {
+        if let count = unixFileDescriptorCount ?? self.unixFileDescriptorCount, count > 0 {
             append(.unixFileDescriptors, .uint32(count))
         }
 
@@ -211,9 +225,13 @@ public extension DBusMessage {
 
     /// Decode a message from its wire representation.
     ///
-    /// - Parameter bytes: A buffer beginning with a complete message. Trailing bytes are ignored.
+    /// - Parameters:
+    ///   - bytes: A buffer beginning with a complete message. Trailing bytes are ignored.
+    ///   - fileDescriptors: Descriptors received out of band with this message. Any `UNIX_FD`
+    ///     argument indexes into these, and the decoded arguments carry the real descriptors.
     /// - Returns: The decoded message and the number of bytes it occupied.
-    static func decode(_ bytes: [UInt8]) throws -> (message: DBusMessage, length: Int) {
+    static func decode(_ bytes: [UInt8],
+                       fileDescriptors: [Int32] = []) throws -> (message: DBusMessage, length: Int) {
 
         guard let total = try length(from: bytes)
             else { throw DBusProtocolError.endOfStream }
@@ -318,7 +336,9 @@ public extension DBusMessage {
         if let bodySignature = bodySignature, bodySignature.isEmpty == false {
 
             let body = Swift.Array(bytes[bodyStart ..< bodyStart + bodyLength])
-            var bodyUnmarshaller = DBusUnmarshaller(bytes: body, endianness: endianness)
+            var bodyUnmarshaller = DBusUnmarshaller(bytes: body,
+                                                    endianness: endianness,
+                                                    fileDescriptors: fileDescriptors)
             message.arguments = try bodyUnmarshaller.read(signature: bodySignature)
 
             guard bodyUnmarshaller.isAtEnd
