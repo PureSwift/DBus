@@ -14,6 +14,11 @@ public enum DBusAuthenticationMechanism: String, Sendable, CaseIterable {
 
     /// No authentication. Accepted only by servers configured to allow it.
     case anonymous = "ANONYMOUS"
+
+    /// Prove knowledge of a shared secret from the user's keyring, without transmitting it.
+    ///
+    /// Used where the peer's credentials cannot be obtained out of band, such as over TCP.
+    case cookieSHA1 = "DBUS_COOKIE_SHA1"
 }
 
 // MARK: - Commands
@@ -104,15 +109,28 @@ internal struct DBusSASLClient {
     /// Whether the server agreed to file descriptor passing.
     private(set) var unixFileDescriptorsSupported = false
 
-    init(mechanisms: [DBusAuthenticationMechanism] = [.external, .anonymous],
+    /// The login name offered for `DBUS_COOKIE_SHA1`.
+    let userName: String
+
+    /// Where to load keyrings from. Injected so tests need not touch the real home directory.
+    let keyringLoader: @Sendable (String) throws -> DBusKeyring
+
+    /// The client challenge generated for the current cookie exchange, kept for tests.
+    private(set) var clientChallenge: String?
+
+    init(mechanisms: [DBusAuthenticationMechanism] = [.external, .cookieSHA1, .anonymous],
          userID: UInt32,
-         negotiateUnixFileDescriptors: Bool = true) {
+         userName: String = ProcessEnvironment.userName,
+         negotiateUnixFileDescriptors: Bool = true,
+         keyringLoader: @escaping @Sendable (String) throws -> DBusKeyring = { try DBusKeyring.load(context: $0) }) {
 
         precondition(mechanisms.isEmpty == false, "At least one mechanism is required")
 
         self.remaining = mechanisms
         self.userID = userID
+        self.userName = userName
         self.negotiateUnixFileDescriptors = negotiateUnixFileDescriptors
+        self.keyringLoader = keyringLoader
         self.state = .authenticating(mechanisms[0])
     }
 }
@@ -173,11 +191,23 @@ internal extension DBusSASLClient {
             state = .failed
             throw DBusProtocolError.authenticationFailed(message.isEmpty ? "Server error" : message)
 
-        case (.authenticating, .data):
+        case let (.authenticating(mechanism), .data(hex)):
 
-            // Neither EXTERNAL nor ANONYMOUS uses a challenge/response exchange.
-            state = .failed
-            return line("CANCEL")
+            // Only DBUS_COOKIE_SHA1 uses a challenge/response exchange.
+            guard mechanism == .cookieSHA1 else {
+                state = .failed
+                return line("CANCEL")
+            }
+
+            do {
+                return try cookieResponse(challenge: hex)
+            }
+            catch {
+                // Cancel rather than drop the connection, so the server can offer another
+                // mechanism; the REJECTED that follows drives the fallback.
+                state = .authenticating(mechanism)
+                return line("CANCEL")
+            }
 
         // MARK: Negotiating file descriptors
 
@@ -223,7 +253,38 @@ private extension DBusSASLClient {
         case .anonymous:
             // The trace string is optional and purely informational.
             return line("AUTH ANONYMOUS \("DBus".hexEncodedASCII)")
+
+        case .cookieSHA1:
+            // The server uses the login name to find the keyring holding the shared secret.
+            return line("AUTH DBUS_COOKIE_SHA1 \(userName.hexEncodedASCII)")
         }
+    }
+
+    /// Answer a `DBUS_COOKIE_SHA1` challenge.
+    ///
+    /// The server sends `<context> <cookie id> <server challenge>`, hex encoded. The reply is
+    /// `<client challenge> <digest>`, also hex encoded, where the digest proves knowledge of
+    /// the cookie without sending it.
+    private mutating func cookieResponse(challenge hex: String) throws -> [UInt8] {
+
+        guard let decoded = hex.hexDecodedString
+            else { throw DBusProtocolError.authenticationFailed("Cookie challenge is not valid hex") }
+
+        let (context, identifier, serverChallenge) = try DBusCookieChallenge.parse(decoded)
+
+        let keyring = try keyringLoader(context)
+
+        guard let cookie = keyring.cookie(for: identifier)
+            else { throw DBusProtocolError.authenticationFailed("No cookie \(identifier) in context \(context)") }
+
+        let clientChallenge = DBusCookieChallenge.clientChallenge()
+        self.clientChallenge = clientChallenge
+
+        let digest = DBusCookieChallenge.digest(serverChallenge: serverChallenge,
+                                                clientChallenge: clientChallenge,
+                                                cookie: cookie.value)
+
+        return line("DATA \("\(clientChallenge) \(digest)".hexEncodedASCII)")
     }
 
     func line(_ string: String) -> [UInt8] {
