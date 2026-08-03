@@ -14,6 +14,12 @@ internal struct DBusMarshaller {
     /// The encoded bytes.
     private(set) var bytes: [UInt8]
 
+    /// Descriptors encountered while marshalling, in the order their indices were assigned.
+    ///
+    /// A `UNIX_FD` is marshalled as an index into the array of descriptors sent out of band
+    /// with the message, not as the descriptor number itself.
+    private(set) var fileDescriptors: [Int32] = []
+
     /// The position the alignment is measured from.
     ///
     /// Alignment in D-Bus is relative to the start of the *message*, not the start of the
@@ -140,8 +146,11 @@ internal extension DBusMarshaller {
         case let .double(value):
             append(value)
         case let .fileDescriptor(value):
-            // Marshalled as an index into the out-of-band file descriptor array.
-            append(UInt32(bitPattern: value.rawValue))
+            // Marshalled as an index into the out-of-band file descriptor array, so the
+            // descriptor itself is recorded here and only its position goes on the wire.
+            let index = fileDescriptors.count
+            fileDescriptors.append(value.rawValue)
+            append(UInt32(index))
 
         case let .string(value):
             appendString(value)
@@ -224,9 +233,17 @@ internal extension DBusMarshaller {
                         endianness: DBusEndianness = .host,
                         origin: Int = 0) throws -> [UInt8] {
 
+        return try marshalWithDescriptors(arguments, endianness: endianness, origin: origin).bytes
+    }
+
+    /// Marshal a complete list of values, returning the bytes and any descriptors they refer to.
+    static func marshalWithDescriptors(_ arguments: [DBusMessageArgument],
+                                       endianness: DBusEndianness = .host,
+                                       origin: Int = 0) throws -> (bytes: [UInt8], fileDescriptors: [Int32]) {
+
         var marshaller = DBusMarshaller(endianness: endianness, origin: origin)
         try marshaller.append(contentsOf: arguments)
-        return marshaller.bytes
+        return (marshaller.bytes, marshaller.fileDescriptors)
     }
 }
 
