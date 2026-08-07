@@ -1,0 +1,69 @@
+name: Swift
+on: [push]
+jobs:
+
+  # macOS is a compile target only, on both architectures: macos-15 is Apple
+  # Silicon and macos-15-intel is the x86_64 image that replaced the retired
+  # macos-13. The test suite needs a session bus and D-Bus is not part of macOS,
+  # so the suite is run on Linux, where a real bus is available. The tests are
+  # still *built* here, so they cannot rot out of compiling on Darwin.
+  macos:
+    name: macOS (${{ matrix.arch }}, ${{ matrix.config }})
+    strategy:
+      # One failing cell should not hide the others: knowing which
+      # architecture and configuration combinations fail is the whole
+      # point of the matrix when diagnosing platform-specific behavior.
+      fail-fast: false
+      matrix:
+        arch: ["arm64", "x86_64"]
+        config: ["debug", "release"]
+        include:
+          - arch: arm64
+            runner: macos-15
+          - arch: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Swift Version
+      run: swift --version
+    - name: Build
+      run: swift build -c ${{ matrix.config }}
+    - name: Build tests
+      # `-enable-testing` is on by default only for debug. The tests use `@testable import`,
+      # and `swift test` passes the flag itself, but a plain build in release does not.
+      run: swift build -c ${{ matrix.config }} --build-tests -Xswiftc -enable-testing
+
+  # x86_64 on the standard hosted runner, arm64 on ubuntu-24.04-arm, which is a
+  # real ARM64 machine rather than a cross-compilation target, so the suite runs
+  # there too. Docker pulls the matching architecture of the same Swift images.
+  linux:
+    name: Linux (${{ matrix.arch }}, ${{ matrix.container }}, ${{ matrix.config }}, ${{ matrix.options || 'static' }})
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["x86_64", "arm64"]
+        container: ["swift:6.2.3", "swift:6.3.3"]
+        config: ["debug", "release"]
+        options: ["", "SWIFT_BUILD_DYNAMIC_LIBRARY=1"]
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}-jammy
+    timeout-minutes: 30
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Swift Version
+      run: swift --version
+    - name: Install D-Bus
+      run: apt-get update -qq && apt-get install -y --no-install-recommends dbus
+    - name: Build
+      run: ${{ matrix.options }} swift build -c ${{ matrix.config }}
+    - name: Test
+      run: dbus-run-session -- env ${{ matrix.options }} swift test -c ${{ matrix.config }} --no-parallel

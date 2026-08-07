@@ -6,118 +6,282 @@
 //  Copyright © 2016 PureSwift. All rights reserved.
 //
 
-import Foundation
-import CDBus
+/// DBus type representing an exception.
+///
+/// This is a *bus-level* error: it carries an `org.freedesktop.DBus.Error.*` name and a
+/// human-readable message, and corresponds to an error reply on the wire. Framing and
+/// marshalling failures are reported as ``DBusProtocolError`` instead.
+public struct DBusError: Error, Equatable, Hashable, Sendable {
 
-// This error is for DBus (swift) runtime failures.
-public enum RuntimeError: Error {
-    case generic(String)
-}
+    /// Error name field
+    public let name: DBusError.Name
 
-// Given a swift string, make a copy of the C string (const char *) and return a pointer to it.
-// This will throw RuntimeError.generic if malloc() fails∫.
-func swiftStringToConstCharStar(_ s: String) throws -> UnsafePointer<Int8> {
-    return try s.withCString { (unsafePointer: UnsafePointer<Int8>) -> UnsafePointer<Int8> in
-        // We need to copy the string to save a copy. unsafePointer is only valid in this closure
-        // UnsafeMutableRawPointer
-        let bufferLen = strlen(unsafePointer) + 1
-        guard let unsafeMutableRawPointer = malloc(bufferLen) else {
-            throw RuntimeError.generic("malloc() failed")
-        }
-        memcpy(unsafeMutableRawPointer, unsafePointer, bufferLen)
-        // UnsafeMutablePointer<Int8>
-        let unsafeMutablePointer = unsafeMutableRawPointer.assumingMemoryBound(to: Int8.self)
-        // UnsafePointer<Int8>
-        return UnsafePointer(unsafeMutablePointer)
+    /// Error message field
+    public let message: String
+
+    public init(name: DBusError.Name, message: String) {
+
+        self.name = name
+        self.message = message
     }
 }
 
-// This is a wrapper of the libdbus DBusError type.
-public class DBusError: Error, Equatable, CustomStringConvertible {
-    internal var internalValue = CDBus.DBusError()
+// MARK: - CustomStringConvertible
 
-    init() {
-        dbus_error_init(&internalValue);
-    }
-
-    // This will throw RuntimeError.generic if the name passed in is not a valid DBus error name,
-    // or if malloc() fails when we are copying the strings to live in C land.
-    convenience init(name: String, message: String = "") throws {
-        self.init()
-
-        let validationError = DBusError()
-        let isValid = dbus_validate_error_name(name, &validationError.internalValue)
-        if isValid == false {
-            throw RuntimeError.generic("\(name) is not a valid DBus Error name.")
-        }
-
-        let cName = try swiftStringToConstCharStar(name)
-        let cMessage = try swiftStringToConstCharStar(message)
-        dbus_set_error_const(&internalValue, cName, cMessage)
-    }
-
-    deinit {
-        dbus_error_free(&internalValue)
-    }
-
-    public var isSet: Bool {
-        let dbusBool = dbus_error_is_set(&internalValue)
-        return Bool(dbusBool)
-    }
-
-    public var name: String {
-        return String(cString: internalValue.name)
-    }
-
-    public var message: String {
-        return String(cString: internalValue.message)
-    }
-
-    public static func == (lhs: DBusError, rhs: DBusError) -> Bool {
-        let lhsName = String(cString: lhs.internalValue.name)
-        let rhsName = String(cString: rhs.internalValue.name)
-        let lhsMessage = String(cString: lhs.internalValue.message)
-        let rhsMessage = String(cString: rhs.internalValue.message)
-        return (lhsName == rhsName &&
-            lhsMessage == rhsMessage)
-    }
+extension DBusError: CustomStringConvertible {
 
     public var description: String {
-        return "DBusError(name: '\(name)', message: '\(message)') "
+
+        return "\(name): \(message)"
     }
 }
+
+// MARK: Error Name
 
 public extension DBusError {
 
-    public struct Name {
-        /// A generic error; "something went wrong" - see the error message for more.
-        ///
-        /// `org.freedesktop.DBus.Error.Failed`
-        public static let failed = String(DBUS_ERROR_FAILED)
+    /// A D-Bus error name.
+    ///
+    /// Error names follow the same syntax rules as interface names.
+    struct Name: Equatable, Hashable, Sendable {
 
-        /// No Memory
-        ///
-        /// `org.freedesktop.DBus.Error.NoMemory`
-        public static let noMemory = String(DBUS_ERROR_NO_MEMORY)
+        public let rawValue: String
 
-        /// Existing file and the operation you're using does not silently overwrite.
-        ///
-        /// `org.freedesktop.DBus.Error.FileExists`
-        public static let fileExists = String(DBUS_ERROR_FILE_EXISTS)
+        public init?(rawValue: String) {
 
-        /// Missing file.
-        ///
-        /// `org.freedesktop.DBus.Error.FileNotFound`
-        public static let fileNotFound = String(DBUS_ERROR_FILE_NOT_FOUND)
+            do { try DBusInterface.validate(rawValue) }
+            catch { return nil }
 
-        /// Invalid arguments
-        ///
-        /// `org.freedesktop.DBus.Error.InvalidArgs`
-        public static let invalidArguments = String(DBUS_ERROR_INVALID_ARGS)
+            self.rawValue = rawValue
+        }
+    }
+}
 
-        /// Invalid signature
-        ///
-        /// `org.freedesktop.DBus.Error.InvalidSignature`
-        public static let invalidSignature = String(DBUS_ERROR_INVALID_SIGNATURE)
+internal extension DBusError.Name {
+
+    /// Initialize with a string known at compile time to be valid.
+    init(_ unsafe: String) {
+
+        guard let value = DBusError.Name(rawValue: unsafe)
+            else { fatalError("Invalid error name \(unsafe)") }
+
+        self = value
+    }
+}
+
+public extension DBusError.Name {
+
+    init(_ interface: DBusInterface) {
+
+        // should be valid
+        self.rawValue = interface.rawValue
+    }
+}
+
+public extension DBusInterface {
+
+    init(_ error: DBusError.Name) {
+
+        self.init(rawValue: error.rawValue)!
+    }
+}
+
+public extension DBusError.Name {
+
+    /// A generic error; "something went wrong" - see the error message for more.
+    ///
+    /// `org.freedesktop.DBus.Error.Failed`
+    static let failed = DBusError.Name("org.freedesktop.DBus.Error.Failed")
+
+    /// No Memory
+    ///
+    /// `org.freedesktop.DBus.Error.NoMemory`
+    static let noMemory = DBusError.Name("org.freedesktop.DBus.Error.NoMemory")
+
+    /// Existing file and the operation you're using does not silently overwrite.
+    ///
+    /// `org.freedesktop.DBus.Error.FileExists`
+    static let fileExists = DBusError.Name("org.freedesktop.DBus.Error.FileExists")
+
+    /// Missing file.
+    ///
+    /// `org.freedesktop.DBus.Error.FileNotFound`
+    static let fileNotFound = DBusError.Name("org.freedesktop.DBus.Error.FileNotFound")
+
+    /// Invalid arguments
+    ///
+    /// `org.freedesktop.DBus.Error.InvalidArgs`
+    static let invalidArguments = DBusError.Name("org.freedesktop.DBus.Error.InvalidArgs")
+
+    /// Invalid signature
+    ///
+    /// `org.freedesktop.DBus.Error.InvalidSignature`
+    static let invalidSignature = DBusError.Name("org.freedesktop.DBus.Error.InvalidSignature")
+
+    /// The bus doesn't know how to launch a service to supply the bus name you wanted.
+    ///
+    /// `org.freedesktop.DBus.Error.ServiceUnknown`
+    static let serviceUnknown = DBusError.Name("org.freedesktop.DBus.Error.ServiceUnknown")
+
+    /// The bus name you referenced doesn't exist (i.e. no application owns it).
+    ///
+    /// `org.freedesktop.DBus.Error.NameHasNoOwner`
+    static let nameHasNoOwner = DBusError.Name("org.freedesktop.DBus.Error.NameHasNoOwner")
+
+    /// Method not found on the object.
+    ///
+    /// `org.freedesktop.DBus.Error.UnknownMethod`
+    static let unknownMethod = DBusError.Name("org.freedesktop.DBus.Error.UnknownMethod")
+
+    /// Object does not exist at the given path.
+    ///
+    /// `org.freedesktop.DBus.Error.UnknownObject`
+    static let unknownObject = DBusError.Name("org.freedesktop.DBus.Error.UnknownObject")
+
+    /// Interface not implemented by the object.
+    ///
+    /// `org.freedesktop.DBus.Error.UnknownInterface`
+    static let unknownInterface = DBusError.Name("org.freedesktop.DBus.Error.UnknownInterface")
+
+    /// Property does not exist on the interface.
+    ///
+    /// `org.freedesktop.DBus.Error.UnknownProperty`
+    static let unknownProperty = DBusError.Name("org.freedesktop.DBus.Error.UnknownProperty")
+
+    /// Property is read-only.
+    ///
+    /// `org.freedesktop.DBus.Error.PropertyReadOnly`
+    static let propertyReadOnly = DBusError.Name("org.freedesktop.DBus.Error.PropertyReadOnly")
+
+    /// Permission denied.
+    ///
+    /// `org.freedesktop.DBus.Error.AccessDenied`
+    static let accessDenied = DBusError.Name("org.freedesktop.DBus.Error.AccessDenied")
+
+    /// The operation is not supported.
+    ///
+    /// `org.freedesktop.DBus.Error.NotSupported`
+    static let notSupported = DBusError.Name("org.freedesktop.DBus.Error.NotSupported")
+
+    /// The call timed out.
+    ///
+    /// `org.freedesktop.DBus.Error.NoReply`
+    static let noReply = DBusError.Name("org.freedesktop.DBus.Error.NoReply")
+
+    /// The connection is disconnected and you're trying to use it.
+    ///
+    /// `org.freedesktop.DBus.Error.Disconnected`
+    static let disconnected = DBusError.Name("org.freedesktop.DBus.Error.Disconnected")
+
+    /// The address given was not valid.
+    ///
+    /// `org.freedesktop.DBus.Error.BadAddress`
+    static let badAddress = DBusError.Name("org.freedesktop.DBus.Error.BadAddress")
+
+    /// A limit was exceeded.
+    ///
+    /// `org.freedesktop.DBus.Error.LimitsExceeded`
+    static let limitsExceeded = DBusError.Name("org.freedesktop.DBus.Error.LimitsExceeded")
+}
+
+extension DBusError.Name: CustomStringConvertible {
+
+    public var description: String {
+
+        return rawValue
+    }
+}
+
+extension DBusError.Name: RawRepresentable { }
+
+// MARK: - Protocol Error
+
+/// An error in the D-Bus wire protocol: framing, marshalling, transport or authentication.
+///
+/// Distinct from ``DBusError``, which models an error *reply* sent by a peer.
+public enum DBusProtocolError: Error, Equatable, Hashable, Sendable {
+
+    /// The stream ended before a complete message could be read.
+    case endOfStream
+
+    /// The endianness byte was neither `l` nor `B`.
+    case invalidByteOrder(UInt8)
+
+    /// The protocol version was not `1`.
+    case invalidProtocolVersion(UInt8)
+
+    /// The message type code was not recognised.
+    case invalidMessageType(UInt8)
+
+    /// A header field could not be decoded.
+    case invalidHeaderField(UInt8)
+
+    /// A required header field was absent for this message type.
+    case missingHeaderField(String)
+
+    /// The declared length exceeds the maximum message size.
+    case messageTooLarge(UInt32)
+
+    /// A type code in the wire data was not a valid signature.
+    case invalidSignature(String)
+
+    /// A marshalled value did not match its declared type.
+    case typeMismatch(expected: String, actual: String)
+
+    /// A string field was not valid UTF-8, or was not NUL-terminated.
+    case invalidString
+
+    /// A padding byte was non-zero, which the specification forbids.
+    case invalidPadding
+
+    /// The value could not be represented, e.g. an array whose elements are not homogeneous.
+    case invalidValue(String)
+
+    /// The bus address string could not be parsed.
+    case invalidAddress(String)
+
+    /// No supported authentication mechanism was offered by the peer.
+    case authenticationFailed(String)
+
+    /// The peer rejected the connection during the SASL handshake.
+    case authenticationRejected(String)
+}
+
+extension DBusProtocolError: CustomStringConvertible {
+
+    public var description: String {
+
+        switch self {
+        case .endOfStream:
+            return "The stream ended before a complete message could be read"
+        case let .invalidByteOrder(byte):
+            return "Invalid byte order marker: \(byte)"
+        case let .invalidProtocolVersion(version):
+            return "Unsupported protocol version: \(version)"
+        case let .invalidMessageType(type):
+            return "Invalid message type: \(type)"
+        case let .invalidHeaderField(code):
+            return "Invalid header field code: \(code)"
+        case let .missingHeaderField(name):
+            return "Missing required header field: \(name)"
+        case let .messageTooLarge(length):
+            return "Message length \(length) exceeds the maximum message size"
+        case let .invalidSignature(string):
+            return "Invalid signature: '\(string)'"
+        case let .typeMismatch(expected, actual):
+            return "Type mismatch: expected \(expected), found \(actual)"
+        case .invalidString:
+            return "Invalid string value"
+        case .invalidPadding:
+            return "Non-zero padding byte"
+        case let .invalidValue(reason):
+            return "Invalid value: \(reason)"
+        case let .invalidAddress(string):
+            return "Invalid bus address: '\(string)'"
+        case let .authenticationFailed(reason):
+            return "Authentication failed: \(reason)"
+        case let .authenticationRejected(reason):
+            return "Authentication rejected: \(reason)"
+        }
     }
 }
