@@ -245,15 +245,15 @@ private final class TCPDaemon {
         argv.append(nil)
         defer { argv.forEach { free($0) } }
 
-        // Darwin does not export `environ` to a linked image; it is reached indirectly instead.
-        #if canImport(Darwin)
-        let environment = _NSGetEnviron()?.pointee
-        #else
-        let environment = environ
-        #endif
+        // Built from `ProcessInfo` rather than the `environ` global, which Darwin does not
+        // export to a linked image.
+        var envp: [UnsafeMutablePointer<CChar>?] = ProcessInfo.processInfo.environment
+            .map { strdup("\($0.key)=\($0.value)") }
+        envp.append(nil)
+        defer { envp.forEach { free($0) } }
 
         var pid: pid_t = 0
-        let status = posix_spawn(&pid, arguments[0], &fileActions, nil, argv, environment)
+        let status = posix_spawn(&pid, arguments[0], &fileActions, nil, argv, envp)
 
         return status == 0 ? pid : nil
     }
