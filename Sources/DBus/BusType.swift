@@ -7,7 +7,7 @@
 //
 
 /// Well-known D-Bus bus types.
-public enum DBusBusType: UInt32 {
+public enum DBusBusType: UInt32, Sendable {
     
     /// The login session bus.
     case session
