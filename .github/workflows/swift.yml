@@ -33,18 +33,36 @@ jobs:
       run: swift --version
     - name: Install D-Bus
       run: brew install dbus
+    - name: Configure a session bus
+      # Homebrew's dbus listens on launchd by default, which a CI runner does not provide
+      # ("DBUS_LAUNCHD_SESSION_BUS_SOCKET is empty"), so the suite is given a configuration
+      # that listens on a plain Unix socket instead.
+      run: |
+        cat > "$RUNNER_TEMP/session.conf" <<'CONFIG'
+        <!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+         "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+        <busconfig>
+          <type>session</type>
+          <listen>unix:tmpdir=/tmp</listen>
+          <policy context="default">
+            <allow send_destination="*" eavesdrop="true"/>
+            <allow eavesdrop="true"/>
+            <allow own="*"/>
+          </policy>
+        </busconfig>
+        CONFIG
     - name: Build
       run: swift build -c ${{ matrix.config }}
     - name: Test
       # Serially: the tests open sockets, and Socket routes every descriptor
       # through a process-wide manager keyed by file descriptor number.
-      run: dbus-run-session -- swift test -c ${{ matrix.config }} --no-parallel
+      run: dbus-run-session --config-file="$RUNNER_TEMP/session.conf" -- swift test -c ${{ matrix.config }} --no-parallel
 
   # x86_64 on the standard hosted runner, arm64 on ubuntu-24.04-arm, which is a
   # real ARM64 machine rather than a cross-compilation target, so the suite runs
   # there too. Docker pulls the matching architecture of the same Swift images.
   linux:
-    name: Linux (${{ matrix.arch }}, ${{ matrix.container }}, ${{ matrix.config }})
+    name: Linux (${{ matrix.arch }}, ${{ matrix.container }}, ${{ matrix.config }}, ${{ matrix.options || 'static' }})
     strategy:
       fail-fast: false
       matrix:
