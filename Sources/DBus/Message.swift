@@ -38,7 +38,7 @@ public final class DBusMessage {
     public init(type: DBusMessageType) throws {
         
         guard let internalPointer = dbus_message_new(type.rawValue)
-            else { throw DBusError.messageInitializationOutOfMemory }
+            else { throw RuntimeError.generic("dbus_message_new() failed") }
         
         self.internalPointer = internalPointer
     }
@@ -52,8 +52,8 @@ public final class DBusMessage {
     /// - Parameter error: A tuple consisting of the message to reply to, the error name, and the error message.
     public init(error: Error) throws {
         
-        guard let internalPointer = dbus_message_new_error(error.replyTo.internalPointer, error.name.rawValue, error.message)
-            else { throw DBusError.messageInitializationOutOfMemory }
+        guard let internalPointer = dbus_message_new_error(error.replyTo.internalPointer, error.name, error.message)
+            else { throw RuntimeError.generic("dbus_message_new_error() failed") }
         
         self.internalPointer = internalPointer
     }
@@ -65,7 +65,7 @@ public final class DBusMessage {
         
         // Returns NULL if memory can't be allocated for the message.
         guard let internalPointer = dbus_message_new_method_call(methodCall.destination?.rawValue, methodCall.path.rawValue, methodCall.interface?.rawValue, methodCall.method) else {
-            throw DBusError.messageInitializationOutOfMemory
+            throw RuntimeError.generic("dbus_message_new_method_call() failed")
         }
         
         self.internalPointer = internalPointer
@@ -75,7 +75,7 @@ public final class DBusMessage {
     public init(methodReturn: DBusMessage) throws {
         
         guard let internalPointer = dbus_message_new_method_return(methodReturn.internalPointer)
-            else { throw DBusError.messageInitializationOutOfMemory }
+            else { throw RuntimeError.generic("dbus_message_new_method_return() failed") }
         
         self.internalPointer = internalPointer
     }
@@ -88,7 +88,7 @@ public final class DBusMessage {
     public init(signal: Signal) throws {
         
         guard let internalPointer = dbus_message_new_signal(signal.path, signal.interface, signal.name)
-            else { throw DBusError.messageInitializationOutOfMemory }
+            else { throw RuntimeError.generic("dbus_message_new_signal() failed") }
         
         self.internalPointer = internalPointer
     }
@@ -153,7 +153,7 @@ public final class DBusMessage {
     public func setReplySerial(_ newValue: UInt32) throws {
         
         guard Bool(dbus_message_set_reply_serial(internalPointer, newValue))
-            else { throw DBusError.messageSetValueOutOfMemory }
+            else { throw RuntimeError.generic("dbus_message_set_reply_serial() failed") }
     }
     
     /// Flag indicating that the caller of the method is prepared to wait for interactive authorization to take place 
@@ -219,23 +219,20 @@ public final class DBusMessage {
     ///
     /// The name is fully-qualified (namespaced). 
     /// The error name must contain only valid characters as defined in the D-Bus specification.
-    public var errorName: DBusError.Name? {
+    public var errorName: String? {
         
-        guard let string = getString(dbus_message_get_error_name)
+        guard let name = getString(dbus_message_get_error_name)
             else { return nil }
-        
-        guard let name = DBusError.Name(rawValue: string)
-            else { fatalError("Invalid error name \(string)") }
-        
+
         return name
     }
     
     /// Sets the name of the error (DBUS_MESSAGE_TYPE_ERROR).
     /// The name is fully-qualified (namespaced).
     /// The error name must contain only valid characters as defined in the D-Bus specification.
-    public func setErrorName(_ newValue: DBusError.Name?) throws {
+    public func setErrorName(_ newValue: String) throws {
         
-        try setString(dbus_message_set_error_name, newValue?.rawValue)
+        try setString(dbus_message_set_error_name, newValue)
     }
     
     /// The interface this message is being sent to (for method call type) 
@@ -348,12 +345,12 @@ public final class DBusMessage {
         if let newValue = newValue {
             
             guard Bool(newValue.withCString({ function(internalPointer, $0) }))
-                else { throw DBusError.messageSetValueOutOfMemory }
+                else { throw RuntimeError.generic("DBusMessage.setString() failed") }
             
         } else {
             
             guard Bool(function(internalPointer, nil))
-                else { throw DBusError.messageSetValueOutOfMemory }
+                else { throw RuntimeError.generic("DBusMessage.setString() failed") }
         }
     }
 }
@@ -368,7 +365,7 @@ public extension DBusMessage {
     public func copy() throws -> DBusMessage {
         
         guard let copyPointer = dbus_message_copy(internalPointer)
-            else { throw DBusError(name: .noMemory, message: "Could not copy message") }
+            else { throw try DBusError(name: DBusError.Name.noMemory, message: "Could not copy message") }
         
         let copyMessage = DBusMessage(copyPointer)
         
@@ -419,10 +416,10 @@ public extension DBusMessage {
     public struct Error {
         
         public let replyTo: DBusMessage
-        public let name: DBusError.Name
+        public let name: String
         public let message: String
         
-        public init(replyTo: DBusMessage, name: DBusError.Name, message: String) {
+        public init(replyTo: DBusMessage, name: String, message: String) {
             
             self.replyTo = replyTo
             self.name = name
@@ -458,57 +455,20 @@ public extension DBusMessage {
     }
 }
 
-internal extension DBusError.Reference {
-    
+public extension DBusError {
     /**
      Sets a DBusError based on the contents of the given message.
-     
+
      The error is only set if the message is an error message, as in `DBusMessageType.error`. The name of the error is set to the name of the message, and the error message is set to the first argument if the argument exists and is a string.
-    */
+     */
     convenience init?(message: DBusMessage) {
-        
         guard message.type == .error
             else { return nil }
-        
+
         self.init()
         guard Bool(dbus_set_error_from_message(&self.internalValue, message.internalPointer))
             else { return nil }
-        
-        assert(isEmpty == false)
-    }
-}
 
-public extension DBusError {
-    
-    /**
-     Sets a DBusError based on the contents of the given message.
-     
-     The error is only set if the message is an error message, as in `DBusMessageType.error`. The name of the error is set to the name of the message, and the error message is set to the first argument if the argument exists and is a string.
-     */
-    init?(message: DBusMessage) {
-        
-        guard let reference = Reference(message: message)
-            else { return nil }
-        
-        self.init(reference)
-    }
-}
-
-// MARK: - Private Extensions
-
-private extension DBusError {
-    
-    // Could not initialize message due to lack of memory.
-    static var messageInitializationOutOfMemory: DBusError {
-        
-        return DBusError(name: .noMemory, message: "Could not initialize message due to lack of memory.")
-    }
-    
-    // Could not modify message due to lack of memory.
-    static var messageSetValueOutOfMemory: DBusError {
-        
-        // If this fails due to lack of memory, the message is hosed and you have to start over building the whole message.
-        // FALSE if not enough memory
-        return DBusError(name: .noMemory, message: "Could not modify message due to lack of memory.")
+        assert(isSet == true)
     }
 }
