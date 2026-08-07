@@ -21,7 +21,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/PureSwift/Socket.git",
-            branch: "fix/descriptor-reuse-race"
+            branch: "main"
         )
     ],
     targets: [
