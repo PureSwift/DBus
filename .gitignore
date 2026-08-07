@@ -3,3 +3,4 @@ Packages/*
 .build
 DBus.xcodeproj/*
 *.pins
+build
