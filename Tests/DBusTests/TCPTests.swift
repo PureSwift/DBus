@@ -4,7 +4,15 @@
 //
 
 import Foundation
+#if canImport(Glibc)
 import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Bionic)
+import Bionic
+#endif
 import Socket
 import Testing
 @testable import DBus
@@ -142,12 +150,20 @@ private final class TCPDaemon {
     private let processID: pid_t
     private let directory: URL
 
-    private static let executablePath = "/usr/bin/dbus-daemon"
+    /// Where `dbus-daemon` lives, or `nil` if it is not installed.
+    ///
+    /// Homebrew installs outside `/usr/bin`, and to a different prefix on Apple Silicon than on
+    /// Intel, so the location is searched rather than assumed.
+    private static let executablePath: String? = [
+        "/usr/bin/dbus-daemon",
+        "/opt/homebrew/bin/dbus-daemon",
+        "/usr/local/bin/dbus-daemon"
+    ].first { FileManager.default.isExecutableFile(atPath: $0) }
 
     /// Start a daemon, retrying on a different port if the chosen one is taken.
     static func start() async -> TCPDaemon? {
 
-        guard FileManager.default.fileExists(atPath: executablePath)
+        guard executablePath != nil
             else { return nil }
 
         for _ in 0 ..< 3 {
@@ -196,11 +212,12 @@ private final class TCPDaemon {
         }
         catch { return nil }
 
-        guard let pid = TCPDaemon.spawn([
-            TCPDaemon.executablePath,
-            "--config-file=\(configurationURL.path)",
-            "--nofork"
-        ]) else {
+        guard let executable = TCPDaemon.executablePath,
+              let pid = TCPDaemon.spawn([
+                  executable,
+                  "--config-file=\(configurationURL.path)",
+                  "--nofork"
+              ]) else {
             try? FileManager.default.removeItem(at: directory)
             return nil
         }
@@ -211,7 +228,13 @@ private final class TCPDaemon {
     /// Launch a process with stdout and stderr discarded, returning its process ID.
     private static func spawn(_ arguments: [String]) -> pid_t? {
 
+        // Darwin typedefs the file actions as an opaque pointer, the other platforms as a struct.
+        #if canImport(Darwin)
+        var fileActions: posix_spawn_file_actions_t?
+        #else
         var fileActions = posix_spawn_file_actions_t()
+        #endif
+
         posix_spawn_file_actions_init(&fileActions)
         defer { posix_spawn_file_actions_destroy(&fileActions) }
 
@@ -222,8 +245,15 @@ private final class TCPDaemon {
         argv.append(nil)
         defer { argv.forEach { free($0) } }
 
+        // Darwin does not export `environ` to a linked image; it is reached indirectly instead.
+        #if canImport(Darwin)
+        let environment = _NSGetEnviron()?.pointee
+        #else
+        let environment = environ
+        #endif
+
         var pid: pid_t = 0
-        let status = posix_spawn(&pid, arguments[0], &fileActions, nil, argv, environ)
+        let status = posix_spawn(&pid, arguments[0], &fileActions, nil, argv, environment)
 
         return status == 0 ? pid : nil
     }
