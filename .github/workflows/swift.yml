@@ -32,7 +32,9 @@ jobs:
     - name: Build
       run: swift build -c ${{ matrix.config }}
     - name: Build tests
-      run: swift build -c ${{ matrix.config }} --build-tests
+      # `-enable-testing` is on by default only for debug. The tests use `@testable import`,
+      # and `swift test` passes the flag itself, but a plain build in release does not.
+      run: swift build -c ${{ matrix.config }} --build-tests -Xswiftc -enable-testing
 
   # x86_64 on the standard hosted runner, arm64 on ubuntu-24.04-arm, which is a
   # real ARM64 machine rather than a cross-compilation target, so the suite runs
