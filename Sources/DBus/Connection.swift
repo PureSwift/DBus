@@ -53,7 +53,7 @@ public final class DBusConnection {
         
         self.shared = shared
         
-        let error = DBusError.Reference()
+        let error = DBusError()
         
         if shared {
             
@@ -65,7 +65,7 @@ public final class DBusConnection {
         }
         
         // check for error
-        if let error = DBusError(error) {
+        if error.isSet {
             
             throw error
         }
@@ -80,7 +80,7 @@ public final class DBusConnection {
         
         self.shared = shared
         
-        let error = DBusError.Reference()
+        let error = DBusError()
         
         let internalBusType = CDBus.DBusBusType(rawValue: busType.rawValue)
         
@@ -94,7 +94,7 @@ public final class DBusConnection {
         }
         
         // check for error
-        if let error = DBusError(error) {
+        if error.isSet {
             
             throw error
         }
@@ -172,7 +172,7 @@ public final class DBusConnection {
         var serialNumber: dbus_uint32_t = 0
         
         guard Bool(dbus_connection_send(internalPointer, message.internalPointer, &serialNumber))
-            else { throw DBusError(name: .failed, message: "") }
+            else { throw try DBusError(name: DBusError.Name.failed, message: "") }
         
         return serialNumber
     }
@@ -190,7 +190,7 @@ public final class DBusConnection {
         }
         
         guard Bool(dbus_connection_send_with_reply(internalPointer, message.internalPointer, pendingCallDoublePointer, timeout.rawValue))
-            else { throw DBusError(name: .failed, message: "No memory") }
+            else { throw try DBusError(name: DBusError.Name.failed, message: "No memory") }
         
         // if the connection is disconnected or you try to send Unix file descriptors on a connection that does not support them,
         // the DBusPendingCall will be set to NULL

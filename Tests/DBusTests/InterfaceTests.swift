@@ -43,7 +43,7 @@ final class InterfaceTests: XCTestCase {
             XCTAssertThrowsError(try DBusInterface.validate(string))
             do { try DBusInterface.validate(string) }
             catch let error as DBusError {
-                XCTAssertEqual(error.name, .invalidArguments)
+                XCTAssertEqual(error.name, DBusError.Name.invalidArguments)
                 print("\"\(string)\" is invalid: \(error.message)")
                 return
             }

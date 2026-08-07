@@ -131,7 +131,7 @@ extension DBusMessageIter {
     private mutating func signature() throws -> DBusSignature {
         
         guard let cString = dbus_message_iter_get_signature(&self)
-            else { throw DBusError(name: .noMemory, message: "Could not get signature") }
+            else { throw try DBusError(name: DBusError.Name.noMemory, message: "Could not get signature") }
         
         let string = String(cString: cString)
         
@@ -242,7 +242,7 @@ internal extension DBusMessageIter {
         
         guard withUnsafePointer(to: &basicValue, {
             Bool(dbus_message_iter_append_basic(&self, Int32(type.integerValue), UnsafeRawPointer($0)))
-        }) else { throw DBusError.messageAppendOutOfMemory }
+        }) else { throw RuntimeError.generic("dbus_message_iter_append_basic() failed") }
     }
     
     private mutating func append(_ string: String, _ type: DBusType = .string) throws {
@@ -266,21 +266,10 @@ internal extension DBusMessageIter {
         */
         
         guard Bool(dbus_message_iter_open_container(&self, Int32(type.integerValue), signature?.rawValue, &subIterator))
-            else { throw DBusError.messageAppendOutOfMemory }
+            else { throw RuntimeError.generic("dbus_message_iter_open_container() failed") }
         
         defer { dbus_message_iter_close_container(&self, &subIterator) }
         
         try container(&subIterator)
-    }
-}
-
-private extension DBusError {
-    
-    // Argument could not be appended due to lack of memory.
-    static var messageAppendOutOfMemory: DBusError {
-        
-        // If this fails due to lack of memory, the message is hosed and you have to start over building the whole message.
-        // FALSE if not enough memory
-        return DBusError(name: .noMemory, message: "Argument could not be appended to message due to lack of memory.")
     }
 }
