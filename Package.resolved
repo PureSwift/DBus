@@ -1,13 +1,13 @@
 {
-  "originHash" : "51678194f516279f7b3e6fb21013db01e400ff717bfe8ac1193a068df3ece14d",
+  "originHash" : "4c005d7d72bcc2b84c1ebb7dc726eda4637dde85566d88f2626222b91c581136",
   "pins" : [
     {
       "identity" : "socket",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/PureSwift/Socket.git",
       "state" : {
-        "branch" : "main",
-        "revision" : "c7293f7f0e9ec6be712c4e4cc13eec246cd760ff"
+        "branch" : "fix/lost-wakeup",
+        "revision" : "40621791f48baf4f6013aa09f3c934a91f7dae5d"
       }
     },
     {
