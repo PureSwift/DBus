@@ -21,7 +21,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/PureSwift/Socket.git",
-            branch: "main"
+            branch: "fix/lost-wakeup"
         )
     ],
     targets: [
