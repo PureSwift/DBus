@@ -127,7 +127,7 @@ public extension DBusAddress {
             bytes.append(high << 4 | low)
         }
 
-        return String(validating: bytes, as: UTF8.self)
+        return String(validatingUTF8: bytes)
     }
 
     private static func hexDigit(_ byte: UInt8) -> UInt8? {
