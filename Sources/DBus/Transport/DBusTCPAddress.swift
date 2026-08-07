@@ -70,7 +70,12 @@ public extension DBusTCPEndpoint {
                         family: Family? = nil) throws -> [DBusTCPEndpoint] {
 
         var hints = addrinfo()
+        // Glibc, Musl and Bionic declare the socket types as an enumeration; Darwin as Int32.
+        #if canImport(Darwin)
+        hints.ai_socktype = SOCK_STREAM
+        #else
         hints.ai_socktype = Int32(SOCK_STREAM.rawValue)
+        #endif
         hints.ai_protocol = Int32(IPPROTO_TCP)
 
         switch family {
