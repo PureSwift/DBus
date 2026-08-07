@@ -197,7 +197,7 @@ internal extension String {
         guard let bytes = hexDecoded
             else { return nil }
 
-        return String(validating: bytes, as: UTF8.self)
+        return String(validatingUTF8: bytes)
     }
 }
 
