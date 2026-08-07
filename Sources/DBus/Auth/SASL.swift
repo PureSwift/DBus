@@ -343,7 +343,7 @@ internal struct DBusSASLLineBuffer {
                 let lineBytes = Swift.Array(bytes[0 ..< index])
                 bytes.removeFirst(index + 2)
 
-                guard let line = String(validating: lineBytes, as: UTF8.self)
+                guard let line = String(validatingUTF8: lineBytes)
                     else { throw DBusProtocolError.authenticationFailed("Response is not valid UTF-8") }
 
                 return line
