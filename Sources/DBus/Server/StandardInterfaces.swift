@@ -75,7 +75,7 @@ internal enum MachineID {
         let bytes = buffer[0 ..< count].prefix { $0 != 0x0A && $0 != 0x00 } // stop at newline or NUL
 
         guard bytes.isEmpty == false,
-            let string = String(validating: Array(bytes), as: UTF8.self)
+            let string = String(validatingUTF8: bytes)
             else { return nil }
 
         return string
