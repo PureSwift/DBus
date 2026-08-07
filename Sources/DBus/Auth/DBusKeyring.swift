@@ -123,7 +123,7 @@ internal extension DBusKeyring {
                 else { return nil }
         }
 
-        return String(validating: contents, as: UTF8.self)
+        return String(validatingUTF8: contents)
     }
 }
 
