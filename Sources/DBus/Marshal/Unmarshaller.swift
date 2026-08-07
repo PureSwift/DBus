@@ -146,7 +146,7 @@ internal extension DBusUnmarshaller {
 
         // Strings on the bus must be valid UTF-8; reject rather than substitute replacement
         // characters, which would silently corrupt object paths and interface names.
-        guard let string = String(validating: utf8, as: UTF8.self)
+        guard let string = String(validatingUTF8: utf8)
             else { throw DBusProtocolError.invalidString }
 
         return string
