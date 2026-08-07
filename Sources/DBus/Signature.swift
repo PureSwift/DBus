@@ -11,7 +11,7 @@ import CDBus
 public struct DBusSignature {
     
     /// Elements.
-    @_versioned
+    @usableFromInline
     internal private(set) var elements: [Element]
     
     /// Cached string.
@@ -20,7 +20,7 @@ public struct DBusSignature {
     /// - Note: Any subsequent mutation will set this value to nil, and `rawValue` and `description` getters
     /// will have to rebuild the string for every invocation. Mutating leads to an unoptimized code path,
     /// but for values created from either a string or an array of elements, this value is cached.
-    @_versioned
+    @usableFromInline
     internal private(set) var string: String?
     
     public init(_ elements: [Element] = []) {
@@ -359,7 +359,7 @@ extension DBusSignature: RandomAccessCollection { }
 
 public extension DBusSignature {
     
-    public indirect enum ValueType: Equatable {
+    indirect enum ValueType: Equatable {
         
         /// Type code marking an 8-bit unsigned integer.
         case byte
@@ -432,7 +432,7 @@ public extension DBusSignature {
 
 public extension DBusSignature.ValueType {
     
-    public var isContainer: Bool {
+    var isContainer: Bool {
         
         switch self {
         case .struct,
@@ -464,7 +464,7 @@ public extension String {
 public extension DBusSignature {
     
     /// DBus Signature Character
-    public enum Character: String {
+    enum Character: String {
         
         // MARK: - Fixed Length Types
         
@@ -592,7 +592,7 @@ public extension String {
 
 public extension DBusSignature {
     
-    public struct DictionaryType: Equatable {
+    struct DictionaryType: Equatable {
         
         public let key: ValueType
         
@@ -636,9 +636,9 @@ extension DBusSignature.DictionaryType: RawRepresentable {
 
 public extension DBusSignature {
     
-    public struct StructureType {
+    struct StructureType {
         
-        @_versioned
+        @usableFromInline
         internal private(set) var elements: [ValueType]
         
         /// Empty structures are not allowed; there must be at least one type code between the parentheses.
@@ -662,7 +662,7 @@ extension DBusSignature.StructureType: Equatable {
 
 public extension DBusSignature.StructureType {
     
-    public var characters: [DBusSignature.Character] {
+    var characters: [DBusSignature.Character] {
         
         return [.structStart] + elements.reduce([], { $0 + $1.characters }) + [.structEnd]
     }

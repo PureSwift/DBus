@@ -27,7 +27,7 @@ import CDBus
  */
 public struct DBusObjectPath {
     
-    @_versioned
+    @usableFromInline
     internal private(set) var elements: [Element]
     
     /// Cached string.
@@ -36,7 +36,7 @@ public struct DBusObjectPath {
     /// - Note: Any subsequent mutation will set this value to nil, and `rawValue` and `description` getters
     /// will have to rebuild the string for every invocation. So mutating leads to the unoptimized code path,
     /// but for values created from either a string or an array of elements, this value is cached.
-    @_versioned
+    @usableFromInline
     internal private(set) var string: String?
     
     /// Initialize with an array of elements.
@@ -274,7 +274,7 @@ extension DBusObjectPath: RandomAccessCollection { }
 public extension DBusObjectPath {
     
     /// An element in the object path
-    public struct Element {
+    struct Element {
         
         /// Don't copy buffer of individual elements, because these elements will always be created
         /// from a bigger string, which we should just internally reference.

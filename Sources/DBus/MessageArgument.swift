@@ -35,7 +35,7 @@ public enum DBusMessageArgument: Equatable {
 public extension DBusMessageArgument {
     
     /// Argument value type. 
-    public var type: DBusSignature.ValueType {
+    var type: DBusSignature.ValueType {
         
         switch self {
         case .byte: return .byte
@@ -62,7 +62,7 @@ public extension DBusMessageArgument {
 public extension DBusMessageArgument {
     
     /// File Descriptor
-    public struct FileDescriptor: RawRepresentable, Equatable, Hashable {
+    struct FileDescriptor: RawRepresentable, Equatable, Hashable {
         
         public var rawValue: CInt
         
@@ -76,7 +76,7 @@ public extension DBusMessageArgument {
 public extension DBusMessageArgument {
     
     /// Structure
-    public struct Structure: Equatable {
+    struct Structure: Equatable {
         
         /// Structure elements.
         internal let elements: [DBusMessageArgument]
@@ -148,7 +148,7 @@ extension DBusMessageArgument.Structure: RandomAccessCollection {
 
 public extension DBusMessageArgument {
     
-    public struct Array: Equatable {
+    struct Array: Equatable {
         
         /// Array elements.
         internal let elements: [DBusMessageArgument]
