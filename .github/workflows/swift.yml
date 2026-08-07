@@ -1,5 +1,5 @@
 name: Swift
-on: [push, pull_request]
+on: [push]
 jobs:
 
   # macOS runs on both architectures: macos-15 is Apple Silicon, macos-15-intel
