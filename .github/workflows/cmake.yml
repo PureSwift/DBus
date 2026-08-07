@@ -1,0 +1,73 @@
+name: CMake
+on: [push]
+jobs:
+
+  # Verifies the CMake packaging path, which builds `libdbus-swift.so` — the
+  # libdbus-1 C ABI — independently of SwiftPM's build graph, since soname,
+  # symbol versioning and install name are not expressible in Package.swift.
+  # SwiftPM remains the primary build used by the other workflow; this guards
+  # CMakeLists.txt from silently drifting, and is the only place the variadic
+  # entry points are exercised, because Swift cannot call a C variadic
+  # function.
+  cmake:
+    name: CMake (${{ matrix.arch }}, ${{ matrix.container }})
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["x86_64", "arm64"]
+        container: ["swift:6.2.3", "swift:6.3.3"]
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    # noble, not jammy like the Swift workflow: CMakeLists.txt requires CMake
+    # 3.26+, and jammy's apt only has 3.22. noble ships 3.28.
+    container: ${{ matrix.container }}-noble
+    timeout-minutes: 30
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Swift Version
+      run: swift --version
+    - name: Install CMake and Ninja
+      run: apt-get update -qq && apt-get install -y --no-install-recommends cmake ninja-build
+    - name: Resolve dependencies
+      # CMake has no package resolution: it reuses the checkouts SwiftPM makes.
+      run: swift package resolve
+    - name: Configure
+      run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    - name: Build
+      run: cmake --build build
+    - name: Check exported symbols
+      run: cmake --build build --target check-exports
+    - name: Run the C ABI smoke test
+      run: cmake --build build --target check-abi
+    - name: Install
+      run: cmake --install build --prefix "$PWD/staging"
+    - name: Check the installed layout
+      run: |
+        set -eu
+        test -f staging/lib/libdbus-swift.so.0
+        test -f staging/lib/pkgconfig/dbus-swift.pc
+        test -f staging/include/dbus-swift/dbus/dbus.h
+
+  # The C ABI targets are off unless SWIFTPM_DBUS_CABI=1, so they need a build
+  # of their own to be covered at all.
+  swiftpm-cabi:
+    name: SwiftPM C ABI (${{ matrix.config }})
+    strategy:
+      fail-fast: false
+      matrix:
+        config: ["debug", "release"]
+    runs-on: ubuntu-latest
+    container: swift:6.3.3-noble
+    timeout-minutes: 30
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Build
+      run: SWIFTPM_DBUS_CABI=1 swift build -c ${{ matrix.config }}
+    - name: Test
+      run: SWIFTPM_DBUS_CABI=1 swift test -c ${{ matrix.config }} --filter DBusABITests --no-parallel

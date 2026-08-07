@@ -1,0 +1,114 @@
+/*
+ * Version script for libdbus-swift.so.0.
+ *
+ * The reference libdbus exports every symbol it defines and carries no version
+ * script. The list is pinned here instead, so that the Swift runtime's symbols
+ * and this library's internals stay local and the ABI surface is asserted
+ * rather than incidental. Keep in sync with cmake/symbols.txt, which
+ * Scripts/check-exports.sh verifies against the built library.
+ */
+
+LIBDBUS_SWIFT_0 {
+global:
+    /* Errors */
+    dbus_error_free;
+    dbus_error_has_name;
+    dbus_error_init;
+    dbus_error_is_set;
+    dbus_move_error;
+    dbus_set_error;
+    dbus_set_error_const;
+
+    /* Memory */
+    dbus_free;
+    dbus_free_string_array;
+    dbus_malloc;
+    dbus_malloc0;
+    dbus_shutdown;
+    dbus_threads_init_default;
+
+    /* Messages */
+    dbus_message_append_args;
+    dbus_message_append_args_valist;
+    dbus_message_copy;
+    dbus_message_get_args;
+    dbus_message_get_args_valist;
+    dbus_message_get_destination;
+    dbus_message_get_error_name;
+    dbus_message_get_interface;
+    dbus_message_get_member;
+    dbus_message_get_no_reply;
+    dbus_message_get_path;
+    dbus_message_get_reply_serial;
+    dbus_message_get_sender;
+    dbus_message_get_serial;
+    dbus_message_get_signature;
+    dbus_message_get_type;
+    dbus_message_has_destination;
+    dbus_message_has_interface;
+    dbus_message_has_member;
+    dbus_message_has_path;
+    dbus_message_has_sender;
+    dbus_message_is_error;
+    dbus_message_is_method_call;
+    dbus_message_is_signal;
+    dbus_message_new;
+    dbus_message_new_error;
+    dbus_message_new_method_call;
+    dbus_message_new_method_return;
+    dbus_message_new_signal;
+    dbus_message_ref;
+    dbus_message_set_destination;
+    dbus_message_set_error_name;
+    dbus_message_set_interface;
+    dbus_message_set_member;
+    dbus_message_set_no_reply;
+    dbus_message_set_path;
+    dbus_message_set_sender;
+    dbus_message_unref;
+
+    /* Message iteration */
+    dbus_message_iter_abandon_container;
+    dbus_message_iter_append_basic;
+    dbus_message_iter_close_container;
+    dbus_message_iter_get_arg_type;
+    dbus_message_iter_get_basic;
+    dbus_message_iter_get_element_type;
+    dbus_message_iter_get_signature;
+    dbus_message_iter_has_next;
+    dbus_message_iter_init;
+    dbus_message_iter_init_append;
+    dbus_message_iter_next;
+    dbus_message_iter_open_container;
+    dbus_message_iter_recurse;
+
+    /* Connections */
+    dbus_connection_close;
+    dbus_connection_flush;
+    dbus_connection_get_is_authenticated;
+    dbus_connection_get_is_connected;
+    dbus_connection_get_server_id;
+    dbus_connection_open;
+    dbus_connection_open_private;
+    dbus_connection_ref;
+    dbus_connection_send;
+    dbus_connection_send_with_reply_and_block;
+    dbus_connection_unref;
+
+    /* Bus operations */
+    dbus_bus_add_match;
+    dbus_bus_get;
+    dbus_bus_get_id;
+    dbus_bus_get_private;
+    dbus_bus_get_unique_name;
+    dbus_bus_get_unix_user;
+    dbus_bus_name_has_owner;
+    dbus_bus_register;
+    dbus_bus_release_name;
+    dbus_bus_remove_match;
+    dbus_bus_request_name;
+    dbus_bus_start_service_by_name;
+
+local:
+    *;
+};

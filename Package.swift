@@ -21,7 +21,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/PureSwift/Socket.git",
-            branch: "fix/stale-readiness"
+            branch: "main"
         )
     ],
     targets: [
@@ -39,3 +39,41 @@ let package = Package(
         )
     ]
 )
+
+// The libdbus-1 C ABI, built only when `SWIFTPM_DBUS_CABI=1`.
+//
+// Off by default because it exports fixed C symbol names: linking it into a
+// process that also links the real libdbus-1 is a duplicate symbol error, and
+// a Swift package that merely depends on `DBus` should never be exposed to
+// that. `CMakeLists.txt`, which builds the installable shared library, always
+// sets it.
+if ProcessInfo.processInfo.environment["SWIFTPM_DBUS_CABI"] == "1" {
+
+    package.products.append(
+        .library(
+            name: "DBusABI",
+            type: libraryType,
+            targets: ["DBusABI"]
+        )
+    )
+
+    package.targets.append(contentsOf: [
+        .target(
+            name: "CDBusABI"
+        ),
+        .target(
+            name: "DBusABI",
+            dependencies: [
+                "DBus",
+                "CDBusABI"
+            ]
+        ),
+        .testTarget(
+            name: "DBusABITests",
+            dependencies: [
+                "DBusABI",
+                "CDBusABI"
+            ]
+        )
+    ])
+}

@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: dbus-swift
+Description: @PROJECT_DESCRIPTION@
+Version: @DBUS_SWIFT_VERSION@
+Libs: -L${libdir} -ldbus-swift
+Cflags: -I${includedir}/dbus-swift

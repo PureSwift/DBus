@@ -1,0 +1,4 @@
+module CDBusABI {
+  header "dbus/dbus.h"
+  export *
+}
