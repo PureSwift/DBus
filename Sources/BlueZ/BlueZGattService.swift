@@ -2,58 +2,60 @@
 // Interface reference: https://bluez.readthedocs.io/en/latest/gatt-api/
 import DBus
 
-/// Client for `org.bluez.GattService1` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct BlueZGattService: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension BlueZ {
+    /// Client for `org.bluez.GattService1` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct GattService: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
-                                     path: path, interface: "org.bluez.GattService1")
-    }
-
-    public var uuid: String {
-        get async throws {
-            let value = try await proxy.property("UUID")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid UUID property")
-            }
-            return decoded
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
+                                         path: path, interface: "org.bluez.GattService1")
         }
-    }
 
-    public var primary: Bool {
-        get async throws {
-            let value = try await proxy.property("Primary")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Primary property")
+        public var uuid: String {
+            get async throws {
+                let value = try await proxy.property("UUID")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid UUID property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var device: DBusObjectPath {
-        get async throws {
-            let value = try await proxy.property("Device")
-            try DBusServiceProxy.validate([value], signature: "o")
-            guard case .objectPath(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Device property")
+        public var primary: Bool {
+            get async throws {
+                let value = try await proxy.property("Primary")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Primary property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var includes: DBusMessageArgument.Array {
-        get async throws {
-            let value = try await proxy.property("Includes")
-            try DBusServiceProxy.validate([value], signature: "ao")
-            guard case .array(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Includes property")
+        public var device: DBusObjectPath {
+            get async throws {
+                let value = try await proxy.property("Device")
+                try DBusServiceProxy.validate([value], signature: "o")
+                guard case .objectPath(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Device property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
+        public var includes: DBusMessageArgument.Array {
+            get async throws {
+                let value = try await proxy.property("Includes")
+                try DBusServiceProxy.validate([value], signature: "ao")
+                guard case .array(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Includes property")
+                }
+                return decoded
+            }
+        }
+
+    }
 }
