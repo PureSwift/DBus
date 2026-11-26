@@ -152,6 +152,11 @@ NetworkManager scans use `requestScan(options:)` and `LastScan` property changes
 instead of a built-in polling loop. Agent callbacks and exported GATT objects
 remain application responsibilities.
 
+Interface components map to nested Swift types, such as `BlueZ.Adapter`,
+`NetworkManager.Device.Wireless`, `NetworkManager.Settings.Connection`,
+`UPower.Device`, and `Login1.Manager`. Interface version suffixes are omitted
+from child type names. Generated filenames remain stable.
+
 The generated clients accept a caller-owned connection:
 
 ```swift
@@ -175,7 +180,7 @@ For `ScreenSaver`, use a session-bus connection and keep it open for the lifetim
 of an inhibition cookie. Pass that cookie to `unInhibit(cookie:)` to release it.
 Only Inhibit/UnInhibit are standardized by the idle-inhibition specification;
 the other screen saver methods depend on the desktop implementation.
-For `Login1.inhibit`, the caller owns the returned file descriptor and must close
+For `Login1.Manager.inhibit`, the caller owns the returned file descriptor and must close
 it to release the inhibitor. Closing only the D-Bus connection does not release it.
 
 Regenerate all five service products from the checked-in API definitions with
