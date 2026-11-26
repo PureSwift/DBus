@@ -1,6 +1,7 @@
 *.xcuserstate
 Packages/*
 .build
+.swiftpm
 DBus.xcodeproj/*
 *.pins
 build
