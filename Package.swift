@@ -1,4 +1,4 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.4
 import PackageDescription
 import class Foundation.ProcessInfo
 
@@ -39,6 +39,16 @@ let package = Package(
         )
     ]
 )
+
+// Standard service clients are separate products so consumers choose their domains.
+for service in ["BlueZ", "NetworkManager", "UPower", "Login1", "ScreenSaver"] {
+    package.products.append(.library(name: service, type: libraryType, targets: [service]))
+    package.targets.append(.target(name: service, dependencies: ["DBus"]))
+}
+package.targets.append(.testTarget(
+    name: "ServiceTests",
+    dependencies: ["DBus", "BlueZ", "NetworkManager", "UPower", "Login1", "ScreenSaver"]
+))
 
 // The libdbus-1 C ABI, built only when `SWIFTPM_DBUS_CABI=1`.
 //
