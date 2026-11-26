@@ -2,95 +2,97 @@
 // Interface reference: https://bluez.readthedocs.io/en/latest/gatt-api/
 import DBus
 
-/// Client for `org.bluez.GattCharacteristic1` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct BlueZGattCharacteristic: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension BlueZ {
+    /// Client for `org.bluez.GattCharacteristic1` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct GattCharacteristic: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
-                                     path: path, interface: "org.bluez.GattCharacteristic1")
-    }
-
-    public func readValue(options: DBusMessageArgument.Dictionary) async throws -> DBusMessageArgument.Array {
-        try DBusServiceProxy.validate([.dictionary(options)], signature: "a{sv}")
-        let reply = try await proxy.call("ReadValue", arguments: [.dictionary(options)])
-        try DBusServiceProxy.validate(reply, signature: "ay")
-        guard case .array(let value) = reply[0] else {
-            throw DBusProtocolError.invalidValue("Invalid ReadValue reply")
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
+                                         path: path, interface: "org.bluez.GattCharacteristic1")
         }
-        return value
-    }
 
-    public func writeValue(value: DBusMessageArgument.Array, options: DBusMessageArgument.Dictionary) async throws {
-        try DBusServiceProxy.validate([.array(value), .dictionary(options)], signature: "aya{sv}")
-        let reply = try await proxy.call("WriteValue", arguments: [.array(value), .dictionary(options)])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func startNotify() async throws {
-        let reply = try await proxy.call("StartNotify", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func stopNotify() async throws {
-        let reply = try await proxy.call("StopNotify", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public var uuid: String {
-        get async throws {
-            let value = try await proxy.property("UUID")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid UUID property")
+        public func readValue(options: DBusMessageArgument.Dictionary) async throws -> DBusMessageArgument.Array {
+            try DBusServiceProxy.validate([.dictionary(options)], signature: "a{sv}")
+            let reply = try await proxy.call("ReadValue", arguments: [.dictionary(options)])
+            try DBusServiceProxy.validate(reply, signature: "ay")
+            guard case .array(let value) = reply[0] else {
+                throw DBusProtocolError.invalidValue("Invalid ReadValue reply")
             }
-            return decoded
+            return value
         }
-    }
 
-    public var service: DBusObjectPath {
-        get async throws {
-            let value = try await proxy.property("Service")
-            try DBusServiceProxy.validate([value], signature: "o")
-            guard case .objectPath(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Service property")
+        public func writeValue(value: DBusMessageArgument.Array, options: DBusMessageArgument.Dictionary) async throws {
+            try DBusServiceProxy.validate([.array(value), .dictionary(options)], signature: "aya{sv}")
+            let reply = try await proxy.call("WriteValue", arguments: [.array(value), .dictionary(options)])
+            try DBusServiceProxy.validate(reply, signature: "")
+        }
+
+        public func startNotify() async throws {
+            let reply = try await proxy.call("StartNotify", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
+        }
+
+        public func stopNotify() async throws {
+            let reply = try await proxy.call("StopNotify", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
+        }
+
+        public var uuid: String {
+            get async throws {
+                let value = try await proxy.property("UUID")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid UUID property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var value: DBusMessageArgument.Array {
-        get async throws {
-            let value = try await proxy.property("Value")
-            try DBusServiceProxy.validate([value], signature: "ay")
-            guard case .array(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Value property")
+        public var service: DBusObjectPath {
+            get async throws {
+                let value = try await proxy.property("Service")
+                try DBusServiceProxy.validate([value], signature: "o")
+                guard case .objectPath(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Service property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var flags: DBusMessageArgument.Array {
-        get async throws {
-            let value = try await proxy.property("Flags")
-            try DBusServiceProxy.validate([value], signature: "as")
-            guard case .array(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Flags property")
+        public var value: DBusMessageArgument.Array {
+            get async throws {
+                let value = try await proxy.property("Value")
+                try DBusServiceProxy.validate([value], signature: "ay")
+                guard case .array(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Value property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var notifying: Bool {
-        get async throws {
-            let value = try await proxy.property("Notifying")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Notifying property")
+        public var flags: DBusMessageArgument.Array {
+            get async throws {
+                let value = try await proxy.property("Flags")
+                try DBusServiceProxy.validate([value], signature: "as")
+                guard case .array(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Flags property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
+        public var notifying: Bool {
+            get async throws {
+                let value = try await proxy.property("Notifying")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Notifying property")
+                }
+                return decoded
+            }
+        }
+
+    }
 }
