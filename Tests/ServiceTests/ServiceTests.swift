@@ -123,7 +123,7 @@ struct ServiceWireTests {
                     _ = try await server.requestName(try #require(DBusBusName(rawValue: name)))
                 }
                 let screenSaver = try ScreenSaver(connection: client)
-                let adapter = try BlueZAdapter(connection: client, path: "/adapter")
+                let adapter = try BlueZ.Adapter(connection: client, path: "/adapter")
                 guard case .dictionary(let filter) = DBusMessageArgument.options(["DuplicateData": .boolean(true)]) else {
                     throw DBusProtocolError.invalidValue("Expected dictionary")
                 }
@@ -148,7 +148,7 @@ struct ServiceWireTests {
                 let power = try UPower(connection: client)
                 #expect(try await power.onBattery)
                 #expect(try await power.getDisplayDevice().rawValue == "/battery")
-                let login = try Login1(connection: client)
+                let login = try Login1.Manager(connection: client)
                 #expect(try await login.canSuspend() == "challenge")
                 do {
                     _ = try await login.canReboot()
