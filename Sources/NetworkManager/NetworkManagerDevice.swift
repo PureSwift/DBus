@@ -2,146 +2,148 @@
 // Interface reference: https://networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager.Device.html
 import DBus
 
-/// Client for `org.freedesktop.NetworkManager.Device` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct NetworkManagerDevice: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension NetworkManager {
+    /// Client for `org.freedesktop.NetworkManager.Device` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct Device: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.NetworkManager",
-                                     path: path, interface: "org.freedesktop.NetworkManager.Device")
-    }
-
-    public func disconnect() async throws {
-        let reply = try await proxy.call("Disconnect", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func delete() async throws {
-        let reply = try await proxy.call("Delete", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public var interface: String {
-        get async throws {
-            let value = try await proxy.property("Interface")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Interface property")
-            }
-            return decoded
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.NetworkManager",
+                                         path: path, interface: "org.freedesktop.NetworkManager.Device")
         }
-    }
 
-    public var ipInterface: String {
-        get async throws {
-            let value = try await proxy.property("IpInterface")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid IpInterface property")
-            }
-            return decoded
+        public func disconnect() async throws {
+            let reply = try await proxy.call("Disconnect", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public var deviceType: UInt32 {
-        get async throws {
-            let value = try await proxy.property("DeviceType")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid DeviceType property")
-            }
-            return decoded
+        public func delete() async throws {
+            let reply = try await proxy.call("Delete", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public var state: UInt32 {
-        get async throws {
-            let value = try await proxy.property("State")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid State property")
+        public var interface: String {
+            get async throws {
+                let value = try await proxy.property("Interface")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Interface property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var stateReason: DBusMessageArgument.Structure {
-        get async throws {
-            let value = try await proxy.property("StateReason")
-            try DBusServiceProxy.validate([value], signature: "(uu)")
-            guard case .struct(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid StateReason property")
+        public var ipInterface: String {
+            get async throws {
+                let value = try await proxy.property("IpInterface")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid IpInterface property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var activeConnection: DBusObjectPath {
-        get async throws {
-            let value = try await proxy.property("ActiveConnection")
-            try DBusServiceProxy.validate([value], signature: "o")
-            guard case .objectPath(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ActiveConnection property")
+        public var deviceType: UInt32 {
+            get async throws {
+                let value = try await proxy.property("DeviceType")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid DeviceType property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var availableConnections: DBusMessageArgument.Array {
-        get async throws {
-            let value = try await proxy.property("AvailableConnections")
-            try DBusServiceProxy.validate([value], signature: "ao")
-            guard case .array(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid AvailableConnections property")
+        public var state: UInt32 {
+            get async throws {
+                let value = try await proxy.property("State")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid State property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var managed: Bool {
-        get async throws {
-            let value = try await proxy.property("Managed")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Managed property")
+        public var stateReason: DBusMessageArgument.Structure {
+            get async throws {
+                let value = try await proxy.property("StateReason")
+                try DBusServiceProxy.validate([value], signature: "(uu)")
+                guard case .struct(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid StateReason property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public func setManaged(_ value: Bool) async throws {
-        try DBusServiceProxy.validate([.boolean(value)], signature: "b")
-        try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
-                                               interface: proxy.interface, name: "Managed", value: .boolean(value))
-    }
-
-    public var autoconnect: Bool {
-        get async throws {
-            let value = try await proxy.property("Autoconnect")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Autoconnect property")
+        public var activeConnection: DBusObjectPath {
+            get async throws {
+                let value = try await proxy.property("ActiveConnection")
+                try DBusServiceProxy.validate([value], signature: "o")
+                guard case .objectPath(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ActiveConnection property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public func setAutoconnect(_ value: Bool) async throws {
-        try DBusServiceProxy.validate([.boolean(value)], signature: "b")
-        try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
-                                               interface: proxy.interface, name: "Autoconnect", value: .boolean(value))
-    }
-
-    public var driver: String {
-        get async throws {
-            let value = try await proxy.property("Driver")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Driver property")
+        public var availableConnections: DBusMessageArgument.Array {
+            get async throws {
+                let value = try await proxy.property("AvailableConnections")
+                try DBusServiceProxy.validate([value], signature: "ao")
+                guard case .array(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid AvailableConnections property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
+        public var managed: Bool {
+            get async throws {
+                let value = try await proxy.property("Managed")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Managed property")
+                }
+                return decoded
+            }
+        }
+
+        public func setManaged(_ value: Bool) async throws {
+            try DBusServiceProxy.validate([.boolean(value)], signature: "b")
+            try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
+                                                   interface: proxy.interface, name: "Managed", value: .boolean(value))
+        }
+
+        public var autoconnect: Bool {
+            get async throws {
+                let value = try await proxy.property("Autoconnect")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Autoconnect property")
+                }
+                return decoded
+            }
+        }
+
+        public func setAutoconnect(_ value: Bool) async throws {
+            try DBusServiceProxy.validate([.boolean(value)], signature: "b")
+            try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
+                                                   interface: proxy.interface, name: "Autoconnect", value: .boolean(value))
+        }
+
+        public var driver: String {
+            get async throws {
+                let value = try await proxy.property("Driver")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Driver property")
+                }
+                return decoded
+            }
+        }
+
+    }
 }
