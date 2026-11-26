@@ -10,11 +10,6 @@ handshake and the transport are all implemented in Swift.
 
 Depends on [PureSwift/Socket](https://github.com/PureSwift/Socket) for async sockets.
 
-> The manifest currently points at a local `../Socket` checkout, which carries three changes not
-> yet upstream: `SCM_RIGHTS` ancillary data support that file-descriptor passing is built on, and
-> two socket-monitor fixes — deferred poll results being applied to a reused descriptor, and a
-> never-connected socket being torn down because an unconnected socket polls as `POLLHUP`.
-
 ## Usage
 
 ```swift
