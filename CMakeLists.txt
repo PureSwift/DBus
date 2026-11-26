@@ -35,6 +35,10 @@ project(DBusABI
     DESCRIPTION "Swift implementation of the libdbus-1 C ABI"
     LANGUAGES C Swift)
 
+if(CMAKE_Swift_COMPILER_VERSION VERSION_LESS 6.4)
+    message(FATAL_ERROR "Swift 6.4 or newer is required.")
+endif()
+
 # ---------------------------------------------------------------------
 # Options
 # ---------------------------------------------------------------------
