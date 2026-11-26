@@ -21,7 +21,7 @@ let package = Package(
     dependencies: [
         .package(
             url: "https://github.com/PureSwift/Socket.git",
-            branch: "main"
+            from: "0.7.0"
         )
     ],
     targets: [
