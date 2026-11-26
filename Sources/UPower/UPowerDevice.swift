@@ -2,460 +2,462 @@
 // Interface reference: https://upower.freedesktop.org/docs/Device.html
 import DBus
 
-/// Client for `org.freedesktop.UPower.Device` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct UPowerDevice: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension UPower {
+    /// Client for `org.freedesktop.UPower.Device` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct Device: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.UPower",
-                                     path: path, interface: "org.freedesktop.UPower.Device")
-    }
-
-    public func refresh() async throws {
-        let reply = try await proxy.call("Refresh", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func getHistory(type: String, timespan: UInt32, resolution: UInt32) async throws -> DBusMessageArgument.Array {
-        let reply = try await proxy.call("GetHistory", arguments: [.string(type), .uint32(timespan), .uint32(resolution)])
-        try DBusServiceProxy.validate(reply, signature: "a(udu)")
-        guard case .array(let value) = reply[0] else {
-            throw DBusProtocolError.invalidValue("Invalid GetHistory reply")
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.UPower",
+                                         path: path, interface: "org.freedesktop.UPower.Device")
         }
-        return value
-    }
 
-    public func getStatistics(type: String) async throws -> DBusMessageArgument.Array {
-        let reply = try await proxy.call("GetStatistics", arguments: [.string(type)])
-        try DBusServiceProxy.validate(reply, signature: "a(dd)")
-        guard case .array(let value) = reply[0] else {
-            throw DBusProtocolError.invalidValue("Invalid GetStatistics reply")
+        public func refresh() async throws {
+            let reply = try await proxy.call("Refresh", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-        return value
-    }
 
-    public func enableChargeThreshold(enabled: Bool) async throws {
-        let reply = try await proxy.call("EnableChargeThreshold", arguments: [.boolean(enabled)])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public var nativePath: String {
-        get async throws {
-            let value = try await proxy.property("NativePath")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid NativePath property")
+        public func getHistory(type: String, timespan: UInt32, resolution: UInt32) async throws -> DBusMessageArgument.Array {
+            let reply = try await proxy.call("GetHistory", arguments: [.string(type), .uint32(timespan), .uint32(resolution)])
+            try DBusServiceProxy.validate(reply, signature: "a(udu)")
+            guard case .array(let value) = reply[0] else {
+                throw DBusProtocolError.invalidValue("Invalid GetHistory reply")
             }
-            return decoded
+            return value
         }
-    }
 
-    public var vendor: String {
-        get async throws {
-            let value = try await proxy.property("Vendor")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Vendor property")
+        public func getStatistics(type: String) async throws -> DBusMessageArgument.Array {
+            let reply = try await proxy.call("GetStatistics", arguments: [.string(type)])
+            try DBusServiceProxy.validate(reply, signature: "a(dd)")
+            guard case .array(let value) = reply[0] else {
+                throw DBusProtocolError.invalidValue("Invalid GetStatistics reply")
             }
-            return decoded
+            return value
         }
-    }
 
-    public var model: String {
-        get async throws {
-            let value = try await proxy.property("Model")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Model property")
+        public func enableChargeThreshold(enabled: Bool) async throws {
+            let reply = try await proxy.call("EnableChargeThreshold", arguments: [.boolean(enabled)])
+            try DBusServiceProxy.validate(reply, signature: "")
+        }
+
+        public var nativePath: String {
+            get async throws {
+                let value = try await proxy.property("NativePath")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid NativePath property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var serial: String {
-        get async throws {
-            let value = try await proxy.property("Serial")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Serial property")
+        public var vendor: String {
+            get async throws {
+                let value = try await proxy.property("Vendor")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Vendor property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var iconName: String {
-        get async throws {
-            let value = try await proxy.property("IconName")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid IconName property")
+        public var model: String {
+            get async throws {
+                let value = try await proxy.property("Model")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Model property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var capacityLevel: String {
-        get async throws {
-            let value = try await proxy.property("CapacityLevel")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid CapacityLevel property")
+        public var serial: String {
+            get async throws {
+                let value = try await proxy.property("Serial")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Serial property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var updateTime: UInt64 {
-        get async throws {
-            let value = try await proxy.property("UpdateTime")
-            try DBusServiceProxy.validate([value], signature: "t")
-            guard case .uint64(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid UpdateTime property")
+        public var iconName: String {
+            get async throws {
+                let value = try await proxy.property("IconName")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid IconName property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var `type`: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Type")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Type property")
+        public var capacityLevel: String {
+            get async throws {
+                let value = try await proxy.property("CapacityLevel")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid CapacityLevel property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var state: UInt32 {
-        get async throws {
-            let value = try await proxy.property("State")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid State property")
+        public var updateTime: UInt64 {
+            get async throws {
+                let value = try await proxy.property("UpdateTime")
+                try DBusServiceProxy.validate([value], signature: "t")
+                guard case .uint64(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid UpdateTime property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var technology: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Technology")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Technology property")
+        public var `type`: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Type")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Type property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var warningLevel: UInt32 {
-        get async throws {
-            let value = try await proxy.property("WarningLevel")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid WarningLevel property")
+        public var state: UInt32 {
+            get async throws {
+                let value = try await proxy.property("State")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid State property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var batteryLevel: UInt32 {
-        get async throws {
-            let value = try await proxy.property("BatteryLevel")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid BatteryLevel property")
+        public var technology: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Technology")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Technology property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var chargeStartThreshold: UInt32 {
-        get async throws {
-            let value = try await proxy.property("ChargeStartThreshold")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ChargeStartThreshold property")
+        public var warningLevel: UInt32 {
+            get async throws {
+                let value = try await proxy.property("WarningLevel")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid WarningLevel property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var chargeEndThreshold: UInt32 {
-        get async throws {
-            let value = try await proxy.property("ChargeEndThreshold")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ChargeEndThreshold property")
+        public var batteryLevel: UInt32 {
+            get async throws {
+                let value = try await proxy.property("BatteryLevel")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid BatteryLevel property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var chargeThresholdSettingsSupported: UInt32 {
-        get async throws {
-            let value = try await proxy.property("ChargeThresholdSettingsSupported")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ChargeThresholdSettingsSupported property")
+        public var chargeStartThreshold: UInt32 {
+            get async throws {
+                let value = try await proxy.property("ChargeStartThreshold")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ChargeStartThreshold property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var powerSupply: Bool {
-        get async throws {
-            let value = try await proxy.property("PowerSupply")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid PowerSupply property")
+        public var chargeEndThreshold: UInt32 {
+            get async throws {
+                let value = try await proxy.property("ChargeEndThreshold")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ChargeEndThreshold property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var hasHistory: Bool {
-        get async throws {
-            let value = try await proxy.property("HasHistory")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid HasHistory property")
+        public var chargeThresholdSettingsSupported: UInt32 {
+            get async throws {
+                let value = try await proxy.property("ChargeThresholdSettingsSupported")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ChargeThresholdSettingsSupported property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var hasStatistics: Bool {
-        get async throws {
-            let value = try await proxy.property("HasStatistics")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid HasStatistics property")
+        public var powerSupply: Bool {
+            get async throws {
+                let value = try await proxy.property("PowerSupply")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid PowerSupply property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var online: Bool {
-        get async throws {
-            let value = try await proxy.property("Online")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Online property")
+        public var hasHistory: Bool {
+            get async throws {
+                let value = try await proxy.property("HasHistory")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid HasHistory property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var isPresent: Bool {
-        get async throws {
-            let value = try await proxy.property("IsPresent")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid IsPresent property")
+        public var hasStatistics: Bool {
+            get async throws {
+                let value = try await proxy.property("HasStatistics")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid HasStatistics property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var isRechargeable: Bool {
-        get async throws {
-            let value = try await proxy.property("IsRechargeable")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid IsRechargeable property")
+        public var online: Bool {
+            get async throws {
+                let value = try await proxy.property("Online")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Online property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var chargeThresholdEnabled: Bool {
-        get async throws {
-            let value = try await proxy.property("ChargeThresholdEnabled")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ChargeThresholdEnabled property")
+        public var isPresent: Bool {
+            get async throws {
+                let value = try await proxy.property("IsPresent")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid IsPresent property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var chargeThresholdSupported: Bool {
-        get async throws {
-            let value = try await proxy.property("ChargeThresholdSupported")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ChargeThresholdSupported property")
+        public var isRechargeable: Bool {
+            get async throws {
+                let value = try await proxy.property("IsRechargeable")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid IsRechargeable property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var energy: Double {
-        get async throws {
-            let value = try await proxy.property("Energy")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Energy property")
+        public var chargeThresholdEnabled: Bool {
+            get async throws {
+                let value = try await proxy.property("ChargeThresholdEnabled")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ChargeThresholdEnabled property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var energyEmpty: Double {
-        get async throws {
-            let value = try await proxy.property("EnergyEmpty")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid EnergyEmpty property")
+        public var chargeThresholdSupported: Bool {
+            get async throws {
+                let value = try await proxy.property("ChargeThresholdSupported")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ChargeThresholdSupported property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var energyFull: Double {
-        get async throws {
-            let value = try await proxy.property("EnergyFull")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid EnergyFull property")
+        public var energy: Double {
+            get async throws {
+                let value = try await proxy.property("Energy")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Energy property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var energyFullDesign: Double {
-        get async throws {
-            let value = try await proxy.property("EnergyFullDesign")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid EnergyFullDesign property")
+        public var energyEmpty: Double {
+            get async throws {
+                let value = try await proxy.property("EnergyEmpty")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid EnergyEmpty property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var energyRate: Double {
-        get async throws {
-            let value = try await proxy.property("EnergyRate")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid EnergyRate property")
+        public var energyFull: Double {
+            get async throws {
+                let value = try await proxy.property("EnergyFull")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid EnergyFull property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var voltage: Double {
-        get async throws {
-            let value = try await proxy.property("Voltage")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Voltage property")
+        public var energyFullDesign: Double {
+            get async throws {
+                let value = try await proxy.property("EnergyFullDesign")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid EnergyFullDesign property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var luminosity: Double {
-        get async throws {
-            let value = try await proxy.property("Luminosity")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Luminosity property")
+        public var energyRate: Double {
+            get async throws {
+                let value = try await proxy.property("EnergyRate")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid EnergyRate property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var percentage: Double {
-        get async throws {
-            let value = try await proxy.property("Percentage")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Percentage property")
+        public var voltage: Double {
+            get async throws {
+                let value = try await proxy.property("Voltage")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Voltage property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var temperature: Double {
-        get async throws {
-            let value = try await proxy.property("Temperature")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Temperature property")
+        public var luminosity: Double {
+            get async throws {
+                let value = try await proxy.property("Luminosity")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Luminosity property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var capacity: Double {
-        get async throws {
-            let value = try await proxy.property("Capacity")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Capacity property")
+        public var percentage: Double {
+            get async throws {
+                let value = try await proxy.property("Percentage")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Percentage property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var voltageMinDesign: Double {
-        get async throws {
-            let value = try await proxy.property("VoltageMinDesign")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid VoltageMinDesign property")
+        public var temperature: Double {
+            get async throws {
+                let value = try await proxy.property("Temperature")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Temperature property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var voltageMaxDesign: Double {
-        get async throws {
-            let value = try await proxy.property("VoltageMaxDesign")
-            try DBusServiceProxy.validate([value], signature: "d")
-            guard case .double(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid VoltageMaxDesign property")
+        public var capacity: Double {
+            get async throws {
+                let value = try await proxy.property("Capacity")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Capacity property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var chargeCycles: Int32 {
-        get async throws {
-            let value = try await proxy.property("ChargeCycles")
-            try DBusServiceProxy.validate([value], signature: "i")
-            guard case .int32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ChargeCycles property")
+        public var voltageMinDesign: Double {
+            get async throws {
+                let value = try await proxy.property("VoltageMinDesign")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid VoltageMinDesign property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var timeToEmpty: Int64 {
-        get async throws {
-            let value = try await proxy.property("TimeToEmpty")
-            try DBusServiceProxy.validate([value], signature: "x")
-            guard case .int64(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid TimeToEmpty property")
+        public var voltageMaxDesign: Double {
+            get async throws {
+                let value = try await proxy.property("VoltageMaxDesign")
+                try DBusServiceProxy.validate([value], signature: "d")
+                guard case .double(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid VoltageMaxDesign property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var timeToFull: Int64 {
-        get async throws {
-            let value = try await proxy.property("TimeToFull")
-            try DBusServiceProxy.validate([value], signature: "x")
-            guard case .int64(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid TimeToFull property")
+        public var chargeCycles: Int32 {
+            get async throws {
+                let value = try await proxy.property("ChargeCycles")
+                try DBusServiceProxy.validate([value], signature: "i")
+                guard case .int32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ChargeCycles property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
+        public var timeToEmpty: Int64 {
+            get async throws {
+                let value = try await proxy.property("TimeToEmpty")
+                try DBusServiceProxy.validate([value], signature: "x")
+                guard case .int64(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid TimeToEmpty property")
+                }
+                return decoded
+            }
+        }
+
+        public var timeToFull: Int64 {
+            get async throws {
+                let value = try await proxy.property("TimeToFull")
+                try DBusServiceProxy.validate([value], signature: "x")
+                guard case .int64(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid TimeToFull property")
+                }
+                return decoded
+            }
+        }
+
+    }
 }
