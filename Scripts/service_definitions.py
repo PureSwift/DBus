@@ -1,7 +1,86 @@
-"""BlueZ and NetworkManager wire API definitions for generate-service-clients.py."""
+"""Wire API definitions for all generated D-Bus service clients.
+
+Each function passes interface metadata to the supplied generator. Importing this
+module does not generate files.
+"""
 
 
-def generate_network_services(generate):
+def generate_services(generate):
+    """Emit every supported service interface through the supplied callback."""
+    _define_upower(generate)
+    _define_login1(generate)
+    _define_screensaver(generate)
+    _define_network_services(generate)
+
+
+def _define_upower(generate):
+    generate('UPower', 'UPower', 'org.freedesktop.UPower', 'org.freedesktop.UPower',
+             '/org/freedesktop/UPower', [
+                 ('EnumerateDevices', [], 'ao'), ('EnumerateKbdBacklights', [], 'ao'),
+                 ('GetDisplayDevice', [], 'o'), ('GetCriticalAction', [], 's')],
+             [('DaemonVersion', 's'), ('OnBattery', 'b'), ('LidIsClosed', 'b'), ('LidIsPresent', 'b')],
+             'https://upower.freedesktop.org/docs/UPower.html')
+
+    generate('UPower', 'UPowerDevice', 'org.freedesktop.UPower', 'org.freedesktop.UPower.Device',
+             None, [('Refresh', [], ''),
+                    ('GetHistory', [('type', 's'), ('timespan', 'u'), ('resolution', 'u')], 'a(udu)'),
+                    ('GetStatistics', [('type', 's')], 'a(dd)'),
+                    ('EnableChargeThreshold', [('enabled', 'b')], '')],
+             [(name, sig) for sig, names in [
+                 ('s', 'NativePath Vendor Model Serial IconName CapacityLevel'),
+                 ('t', 'UpdateTime'),
+                 ('u', 'Type State Technology WarningLevel BatteryLevel ChargeStartThreshold ChargeEndThreshold ChargeThresholdSettingsSupported'),
+                 ('b', 'PowerSupply HasHistory HasStatistics Online IsPresent IsRechargeable ChargeThresholdEnabled ChargeThresholdSupported'),
+                 ('d', 'Energy EnergyEmpty EnergyFull EnergyFullDesign EnergyRate Voltage Luminosity Percentage Temperature Capacity VoltageMinDesign VoltageMaxDesign'),
+                 ('i', 'ChargeCycles'), ('x', 'TimeToEmpty TimeToFull')]
+              for name in names.split()], 'https://upower.freedesktop.org/docs/Device.html')
+
+
+def _define_login1(generate):
+    login_methods = [
+        ('GetSession', [('sessionID', 's')], 'o'), ('GetSessionByPID', [('pid', 'u')], 'o'),
+        ('GetUser', [('uid', 'u')], 'o'), ('GetUserByPID', [('pid', 'u')], 'o'),
+        ('GetSeat', [('seatID', 's')], 'o'), ('ListSessions', [], 'a(susso)'),
+        ('ListUsers', [], 'a(uso)'), ('ListSeats', [], 'a(so)'), ('ListInhibitors', [], 'a(ssssuu)'),
+        ('Inhibit', [('what', 's'), ('who', 's'), ('why', 's'), ('mode', 's')], 'h'),
+        ('LockSessions', [], ''), ('UnlockSessions', [], ''),
+        ('ScheduleShutdown', [('type', 's'), ('usec', 't')], ''),
+        ('CancelScheduledShutdown', [], 'b'),
+    ]
+    for action in ['Release', 'Activate', 'Lock', 'Unlock', 'Terminate']:
+        login_methods.append((action + 'Session', [('sessionID', 's')], ''))
+    for action in ['PowerOff', 'Reboot', 'Halt', 'Suspend', 'Hibernate', 'HybridSleep', 'SuspendThenHibernate']:
+        login_methods += [(action, [('interactive', 'b')], ''), ('Can' + action, [], 's')]
+    generate('Login1', 'Login1', 'org.freedesktop.login1', 'org.freedesktop.login1.Manager',
+             '/org/freedesktop/login1', login_methods,
+             [('PreparingForSleep', 'b'), ('PreparingForShutdown', 'b'), ('IdleHint', 'b'),
+              ('IdleSinceHint', 't'), ('BlockInhibited', 's'), ('DelayInhibited', 's'),
+              ('InhibitDelayMaxUSec', 't'), ('LidClosed', 'b'), ('Docked', 'b')],
+             'https://www.freedesktop.org/software/systemd/man/latest/org.freedesktop.login1.html')
+
+    generate('Login1', 'Login1Session', 'org.freedesktop.login1', 'org.freedesktop.login1.Session',
+             None, [(method, [], '') for method in ['Activate', 'Lock', 'Unlock', 'Terminate']] +
+             [('SetIdleHint', [('idle', 'b')], ''), ('SetLockedHint', [('locked', 'b')], '')],
+             [('Id', 's'), ('Name', 's'), ('Type', 's'), ('Class', 's'), ('State', 's'),
+              ('Active', 'b'), ('Remote', 'b'), ('IdleHint', 'b'), ('LockedHint', 'b')],
+             'https://www.freedesktop.org/software/systemd/man/latest/org.freedesktop.login1.html')
+
+
+def _define_screensaver(generate):
+    generate('ScreenSaver', 'ScreenSaver', 'org.freedesktop.ScreenSaver', 'org.freedesktop.ScreenSaver',
+             '/org/freedesktop/ScreenSaver', [
+                 ('Inhibit', [('applicationName', 's'), ('reason', 's')], 'u'),
+                 ('UnInhibit', [('cookie', 'u')], ''), ('Lock', [], ''),
+                 ('SimulateUserActivity', [], ''), ('GetActive', [], 'b'),
+                 ('GetActiveTime', [], 'u'), ('GetSessionIdleTime', [], 'u'),
+                 ('SetActive', [('active', 'b')], 'b'),
+                 ('Throttle', [('applicationName', 's'), ('reason', 's')], 'u'),
+                 ('UnThrottle', [('cookie', 'u')], '')], [],
+             'https://specifications.freedesktop.org/idle-inhibit/latest/ ; '
+             'https://github.com/KDE/kscreenlocker/blob/master/dbus/org.freedesktop.ScreenSaver.xml', 'session')
+
+
+def _define_network_services(generate):
     bluez = 'https://bluez.readthedocs.io/en/latest/'
     nm = 'https://networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager'
 
