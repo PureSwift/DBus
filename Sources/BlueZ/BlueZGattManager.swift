@@ -2,25 +2,27 @@
 // Interface reference: https://bluez.readthedocs.io/en/latest/gatt-api/
 import DBus
 
-/// Client for `org.bluez.GattManager1` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct BlueZGattManager: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension BlueZ {
+    /// Client for `org.bluez.GattManager1` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct GattManager: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
-                                     path: path, interface: "org.bluez.GattManager1")
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
+                                         path: path, interface: "org.bluez.GattManager1")
+        }
+
+        public func registerApplication(application: DBusObjectPath, options: DBusMessageArgument.Dictionary) async throws {
+            try DBusServiceProxy.validate([.objectPath(application), .dictionary(options)], signature: "oa{sv}")
+            let reply = try await proxy.call("RegisterApplication", arguments: [.objectPath(application), .dictionary(options)])
+            try DBusServiceProxy.validate(reply, signature: "")
+        }
+
+        public func unregisterApplication(application: DBusObjectPath) async throws {
+            let reply = try await proxy.call("UnregisterApplication", arguments: [.objectPath(application)])
+            try DBusServiceProxy.validate(reply, signature: "")
+        }
+
     }
-
-    public func registerApplication(application: DBusObjectPath, options: DBusMessageArgument.Dictionary) async throws {
-        try DBusServiceProxy.validate([.objectPath(application), .dictionary(options)], signature: "oa{sv}")
-        let reply = try await proxy.call("RegisterApplication", arguments: [.objectPath(application), .dictionary(options)])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func unregisterApplication(application: DBusObjectPath) async throws {
-        let reply = try await proxy.call("UnregisterApplication", arguments: [.objectPath(application)])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
 }
