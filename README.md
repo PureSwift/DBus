@@ -5,7 +5,7 @@ handshake and the transport are all implemented in Swift.
 
 ## Requirements
 
-- Swift 6.0+
+- Swift 6.4+
 - Linux (or any platform with a D-Bus daemon reachable over a Unix socket)
 
 Depends on [PureSwift/Socket](https://github.com/PureSwift/Socket) for async sockets.
@@ -131,6 +131,57 @@ Implemented:
 Not yet implemented:
 
 - Code generation from introspection XML
+
+## Service libraries
+
+Each service is a separate SwiftPM library product and import:
+
+| Product | Coverage | Bus |
+| --- | --- | --- |
+| `BlueZ` | ObjectManager, adapter, device, GATT service/characteristic/descriptor and registration clients | System |
+| `NetworkManager` | Manager, device, wireless, access-point and connection-settings clients | System |
+| `UPower` | Manager and device methods, battery properties and signals | System |
+| `Login1` | Manager/session clients, power operations and inhibitors | System |
+| `ScreenSaver` | Idle inhibition and KDE-compatible screen saver controls | Session |
+
+All five products are generated from checked-in interface definitions. BlueZ and
+NetworkManager use caller-owned connections instead of process-wide `shared`
+instances. BlueZ's `getManagedObjects()` returns a snapshot; consumers maintain
+their own cache using `signals()` and per-object `propertyChanges()` streams.
+NetworkManager scans use `requestScan(options:)` and `LastScan` property changes
+instead of a built-in polling loop. Agent callbacks and exported GATT objects
+remain application responsibilities.
+
+The generated clients accept a caller-owned connection:
+
+```swift
+import DBus
+import UPower
+
+let connection = try await DBusConnection.connect(to: .system)
+let power = try UPower(connection: connection)
+let onBattery = try await power.onBattery
+await connection.close()
+```
+
+`properties()`, `propertyChanges()` and `signals()` expose property snapshots and
+async message streams. Recreate subscriptions when a service restarts. Complex
+array, dictionary and structure results retain their D-Bus representation;
+container arguments and replies are signature-checked. Methods with multiple
+results return labeled tuples. Writable properties have async throwing setters.
+Remote errors propagate as `DBusError`, including unsupported optional methods.
+
+For `ScreenSaver`, use a session-bus connection and keep it open for the lifetime
+of an inhibition cookie. Pass that cookie to `unInhibit(cookie:)` to release it.
+Only Inhibit/UnInhibit are standardized by the idle-inhibition specification;
+the other screen saver methods depend on the desktop implementation.
+For `Login1.inhibit`, the caller owns the returned file descriptor and must close
+it to release the inhibitor. Closing only the D-Bus connection does not release it.
+
+Regenerate all five service products from the checked-in API definitions with
+`python3 Scripts/generate-service-clients.py`. Upstream references are linked in
+the generator and generated files. CMake continues to package the core C ABI;
+service products are built through SwiftPM.
 
 ## Tests
 

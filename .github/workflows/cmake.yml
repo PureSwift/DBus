@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: ["x86_64", "arm64"]
-        container: ["swift:6.2.3", "swift:6.3.3"]
+        container: ["swift:6.4"]
         include:
           - arch: x86_64
             runner: ubuntu-latest
@@ -62,7 +62,7 @@ jobs:
       matrix:
         config: ["debug", "release"]
     runs-on: ubuntu-latest
-    container: swift:6.3.3-noble
+    container: swift:6.4-noble
     timeout-minutes: 30
     steps:
     - name: Checkout
