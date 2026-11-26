@@ -1,14 +1,38 @@
 # DBus
 
-Pure Swift library for D-Bus. No `libdbus`, no C implementation — the wire format, the SASL
-handshake and the transport are all implemented in Swift.
+A Swift implementation of D-Bus with async connections, object export, and generated
+clients for common desktop services. The wire format, SASL handshake, and transport
+are implemented in Swift without depending on `libdbus`. An optional C ABI exposes
+a subset of the libdbus-1 API.
 
 ## Requirements
 
 - Swift 6.4+
-- Linux (or any platform with a D-Bus daemon reachable over a Unix socket)
+- Linux or macOS 13+
+- A reachable D-Bus daemon for bus connections, using Unix sockets or TCP
+- The corresponding service daemon for service clients
 
-Depends on [PureSwift/Socket](https://github.com/PureSwift/Socket) for async sockets.
+Uses [PureSwift/Socket](https://github.com/PureSwift/Socket) for async sockets.
+SwiftPM requires Socket 0.7.0 or a compatible release before 1.0.0.
+
+## Swift Package Manager
+
+Add `https://github.com/PureSwift/DBus.git` as a package dependency. Select the
+`DBus` product for the core API and any service products your application uses:
+`BlueZ`, `NetworkManager`, `UPower`, `Login1`, or `ScreenSaver`. Each service has
+its own target and depends on `DBus`.
+
+For example, a target using Bluetooth clients can declare:
+
+```swift
+.target(
+    name: "MyApp",
+    dependencies: [
+        .product(name: "DBus", package: "DBus"),
+        .product(name: "BlueZ", package: "DBus")
+    ]
+)
+```
 
 ## Usage
 
@@ -17,25 +41,15 @@ import DBus
 
 let connection = try await DBusConnection.connect(to: .session)
 
-let reply = try await connection.send(
-    DBusMessage(methodCall: DBusMessage.MethodCall(
-        destination: DBusBusName(rawValue: "org.freedesktop.DBus")!,
-        path: DBusObjectPath(rawValue: "/org/freedesktop/DBus")!,
-        interface: DBusInterface(rawValue: "org.freedesktop.DBus")!,
-        method: DBusMember(rawValue: "ListNames")!
-    ))
-)
-
-if case let .array(names)? = reply.arguments.first {
-    for name in names.compactMap({ $0.stringValue }) {
-        print(name)
-    }
+for name in try await connection.listNames() {
+    print(name)
 }
 
 await connection.close()
 ```
 
-An error reply is thrown as a `DBusError` carrying its `org.freedesktop.DBus.Error.*` name;
+Use `callMethod` or `send` for custom method calls. An error reply is thrown as a
+`DBusError` carrying the remote error name;
 framing and marshalling failures are thrown as `DBusProtocolError`.
 
 ### File descriptors
@@ -73,6 +87,16 @@ for await signal in signals {
 ### Exporting an object
 
 ```swift
+actor CounterState {
+    private(set) var total: UInt32 = 0
+
+    func increment() -> UInt32 {
+        total += 1
+        return total
+    }
+}
+
+let state = CounterState()
 let counter = DBusInterfaceImplementation(
     name: DBusInterface(rawValue: "com.example.Counter")!,
     methods: [
@@ -97,9 +121,9 @@ introspection XML is generated from the declared methods, properties and signals
 
 ## Design
 
-`DBusMessage` and every value type are `Sendable` structs. `DBusConnection` is an actor that owns
-the socket, runs the read loop and matches replies to calls by serial. Nothing wraps a C pointer,
-so there is no reference counting to get wrong.
+The core API uses `Sendable` value types for messages and arguments. `DBusConnection`
+is an actor that owns the socket, runs the read loop, and matches replies to calls
+by serial. Callers own their connections and close them when finished.
 
 Values are modelled by `DBusMessageArgument`, which covers every D-Bus type including `variant`
 and `dict`. Array element types are stored explicitly rather than inferred, so an empty array
@@ -125,12 +149,14 @@ Implemented:
 - SASL `DBUS_COOKIE_SHA1`, with a pure-Swift SHA-1
 - `tcp:` and `nonce-tcp:` transports, IPv4 and IPv6
 - Unix file descriptor passing, via `SCM_RIGHTS`
-
 - Parsing introspection XML into a typed node model
+- Service client generation from checked-in Python API definitions
+- Optional subset of the libdbus-1 C ABI
 
 Not yet implemented:
 
-- Code generation from introspection XML
+- Automatic client generation from introspection XML. The existing service generator
+  uses Python API definitions; it does not read introspection XML.
 
 ## Service libraries
 
@@ -144,18 +170,27 @@ Each service is a separate SwiftPM library product and import:
 | `Login1` | Manager/session clients, power operations and inhibitors | System |
 | `ScreenSaver` | Idle inhibition and KDE-compatible screen saver controls | Session |
 
-All five products are generated from checked-in interface definitions. BlueZ and
-NetworkManager use caller-owned connections instead of process-wide `shared`
-instances. BlueZ's `getManagedObjects()` returns a snapshot; consumers maintain
+All five products are generated from checked-in interface definitions and use
+caller-owned connections. BlueZ's `getManagedObjects()` returns a snapshot; consumers maintain
 their own cache using `signals()` and per-object `propertyChanges()` streams.
 NetworkManager scans use `requestScan(options:)` and `LastScan` property changes
 instead of a built-in polling loop. Agent callbacks and exported GATT objects
 remain application responsibilities.
 
-Interface components map to nested Swift types, such as `BlueZ.Adapter`,
-`NetworkManager.Device.Wireless`, `NetworkManager.Settings.Connection`,
-`UPower.Device`, and `Login1.Manager`. Interface version suffixes are omitted
-from child type names. Generated filenames remain stable.
+Dots in interface names map to nested Swift types after the service namespace;
+interface version suffixes are omitted from child type names:
+
+| D-Bus interface | Swift type | Source file |
+| --- | --- | --- |
+| `org.bluez.Adapter1` | `BlueZ.Adapter` | `BlueZAdapter.swift` |
+| `org.freedesktop.NetworkManager.Device.Wireless` | `NetworkManager.Device.Wireless` | `NetworkManagerWireless.swift` |
+| `org.freedesktop.NetworkManager.Settings.Connection` | `NetworkManager.Settings.Connection` | `NetworkManagerSettingsConnection.swift` |
+| `org.freedesktop.UPower.Device` | `UPower.Device` | `UPowerDevice.swift` |
+| `org.freedesktop.login1.Manager` | `Login1.Manager` | `Login1.swift` |
+
+`BlueZ` itself provides the ObjectManager client. `NetworkManager`, `UPower`, and
+`ScreenSaver` provide their root clients; `Login1` is a namespace for its clients.
+Generated filenames remain stable.
 
 The generated clients accept a caller-owned connection:
 
@@ -169,11 +204,25 @@ let onBattery = try await power.onBattery
 await connection.close()
 ```
 
+For an object-specific client, pass its object path:
+
+```swift
+import DBus
+import BlueZ
+
+let connection = try await DBusConnection.connect(to: .system)
+// Use an adapter path discovered through BlueZ.getManagedObjects().
+let adapter = try BlueZ.Adapter(connection: connection, path: "/org/bluez/hci0")
+let powered = try await adapter.powered
+await connection.close()
+```
+
 `properties()`, `propertyChanges()` and `signals()` expose property snapshots and
 async message streams. Recreate subscriptions when a service restarts. Complex
 array, dictionary and structure results retain their D-Bus representation;
 container arguments and replies are signature-checked. Methods with multiple
-results return labeled tuples. Writable properties have async throwing setters.
+results return labeled tuples. Writable properties have async throwing setter methods, such as
+`try await adapter.setPowered(true)`.
 Remote errors propagate as `DBusError`, including unsupported optional methods.
 
 For `ScreenSaver`, use a session-bus connection and keep it open for the lifetime
@@ -183,20 +232,64 @@ the other screen saver methods depend on the desktop implementation.
 For `Login1.Manager.inhibit`, the caller owns the returned file descriptor and must close
 it to release the inhibitor. Closing only the D-Bus connection does not release it.
 
-Regenerate all five service products from the checked-in API definitions with
-`python3 Scripts/generate-service-clients.py`. Upstream references are linked in
-the generator and generated files. CMake continues to package the core C ABI;
-service products are built through SwiftPM.
+### Regenerating service clients
+
+Edit the API metadata in [Scripts/service_definitions.py](Scripts/service_definitions.py)
+and run:
+
+```sh
+python3 Scripts/generate-service-clients.py
+```
+
+[Scripts/generate-service-clients.py](Scripts/generate-service-clients.py) contains
+the Swift generation logic. It writes all five service products; do not edit the
+generated Swift files manually. Upstream interface references are linked in the
+API definitions and generated files.
+
+## Optional C ABI
+
+The `DBusABI` product implements the subset declared in
+[dbus.h](Sources/CDBusABI/include/dbus/dbus.h). A small C shim handles variadic
+entry points. Enable the product and its tests explicitly in SwiftPM:
+
+```sh
+SWIFTPM_DBUS_CABI=1 swift build
+SWIFTPM_DBUS_CABI=1 swift test --filter DBusABITests --no-parallel
+```
+
+It exports fixed `dbus_*` symbols and should not be linked alongside the real
+libdbus-1 in the same process.
+
+For an installable Linux shared library, use CMake 3.26+ and Ninja:
+
+```sh
+swift build
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cmake --build build --target check-exports check-abi
+cmake --install build --prefix /usr/local
+```
+
+CMake reuses the Socket and swift-system checkouts resolved by SwiftPM. It builds
+`libdbus-swift.so.0`, with its own library name because it implements only part
+of the libdbus-1 ABI. Service products are built through SwiftPM.
 
 ## Tests
 
 ```sh
-swift test
+swift test --no-parallel
+```
+
+To exercise live session-bus tests on Linux, run under a temporary bus:
+
+```sh
+dbus-run-session -- swift test --no-parallel
 ```
 
 Written with [Swift Testing](https://github.com/swiftlang/swift-testing). The suites that need a
-live bus are marked `.enabled(if: hasSessionBus)`, so they report as skipped rather than passing
-when no bus socket is present.
+live session bus skip those tests when no bus socket is present. The service tests
+include a local exported service to exercise generated clients without requiring
+the corresponding desktop daemons.
 
 ## License
 
