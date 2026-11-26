@@ -2,126 +2,128 @@
 // Interface reference: https://networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager.Device.Wireless.html
 import DBus
 
-/// Client for `org.freedesktop.NetworkManager.Device.Wireless` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct NetworkManagerWireless: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension NetworkManager.Device {
+    /// Client for `org.freedesktop.NetworkManager.Device.Wireless` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct Wireless: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.NetworkManager",
-                                     path: path, interface: "org.freedesktop.NetworkManager.Device.Wireless")
-    }
-
-    public func getAccessPoints() async throws -> DBusMessageArgument.Array {
-        let reply = try await proxy.call("GetAccessPoints", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "ao")
-        guard case .array(let value) = reply[0] else {
-            throw DBusProtocolError.invalidValue("Invalid GetAccessPoints reply")
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.NetworkManager",
+                                         path: path, interface: "org.freedesktop.NetworkManager.Device.Wireless")
         }
-        return value
-    }
 
-    public func getAllAccessPoints() async throws -> DBusMessageArgument.Array {
-        let reply = try await proxy.call("GetAllAccessPoints", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "ao")
-        guard case .array(let value) = reply[0] else {
-            throw DBusProtocolError.invalidValue("Invalid GetAllAccessPoints reply")
-        }
-        return value
-    }
-
-    public func requestScan(options: DBusMessageArgument.Dictionary) async throws {
-        try DBusServiceProxy.validate([.dictionary(options)], signature: "a{sv}")
-        let reply = try await proxy.call("RequestScan", arguments: [.dictionary(options)])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public var hwAddress: String {
-        get async throws {
-            let value = try await proxy.property("HwAddress")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid HwAddress property")
+        public func getAccessPoints() async throws -> DBusMessageArgument.Array {
+            let reply = try await proxy.call("GetAccessPoints", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "ao")
+            guard case .array(let value) = reply[0] else {
+                throw DBusProtocolError.invalidValue("Invalid GetAccessPoints reply")
             }
-            return decoded
+            return value
         }
-    }
 
-    public var permHwAddress: String {
-        get async throws {
-            let value = try await proxy.property("PermHwAddress")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid PermHwAddress property")
+        public func getAllAccessPoints() async throws -> DBusMessageArgument.Array {
+            let reply = try await proxy.call("GetAllAccessPoints", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "ao")
+            guard case .array(let value) = reply[0] else {
+                throw DBusProtocolError.invalidValue("Invalid GetAllAccessPoints reply")
             }
-            return decoded
+            return value
         }
-    }
 
-    public var mode: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Mode")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Mode property")
+        public func requestScan(options: DBusMessageArgument.Dictionary) async throws {
+            try DBusServiceProxy.validate([.dictionary(options)], signature: "a{sv}")
+            let reply = try await proxy.call("RequestScan", arguments: [.dictionary(options)])
+            try DBusServiceProxy.validate(reply, signature: "")
+        }
+
+        public var hwAddress: String {
+            get async throws {
+                let value = try await proxy.property("HwAddress")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid HwAddress property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var bitrate: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Bitrate")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Bitrate property")
+        public var permHwAddress: String {
+            get async throws {
+                let value = try await proxy.property("PermHwAddress")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid PermHwAddress property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var accessPoints: DBusMessageArgument.Array {
-        get async throws {
-            let value = try await proxy.property("AccessPoints")
-            try DBusServiceProxy.validate([value], signature: "ao")
-            guard case .array(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid AccessPoints property")
+        public var mode: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Mode")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Mode property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var activeAccessPoint: DBusObjectPath {
-        get async throws {
-            let value = try await proxy.property("ActiveAccessPoint")
-            try DBusServiceProxy.validate([value], signature: "o")
-            guard case .objectPath(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ActiveAccessPoint property")
+        public var bitrate: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Bitrate")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Bitrate property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var wirelessCapabilities: UInt32 {
-        get async throws {
-            let value = try await proxy.property("WirelessCapabilities")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid WirelessCapabilities property")
+        public var accessPoints: DBusMessageArgument.Array {
+            get async throws {
+                let value = try await proxy.property("AccessPoints")
+                try DBusServiceProxy.validate([value], signature: "ao")
+                guard case .array(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid AccessPoints property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var lastScan: Int64 {
-        get async throws {
-            let value = try await proxy.property("LastScan")
-            try DBusServiceProxy.validate([value], signature: "x")
-            guard case .int64(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid LastScan property")
+        public var activeAccessPoint: DBusObjectPath {
+            get async throws {
+                let value = try await proxy.property("ActiveAccessPoint")
+                try DBusServiceProxy.validate([value], signature: "o")
+                guard case .objectPath(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ActiveAccessPoint property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
+        public var wirelessCapabilities: UInt32 {
+            get async throws {
+                let value = try await proxy.property("WirelessCapabilities")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid WirelessCapabilities property")
+                }
+                return decoded
+            }
+        }
+
+        public var lastScan: Int64 {
+            get async throws {
+                let value = try await proxy.property("LastScan")
+                try DBusServiceProxy.validate([value], signature: "x")
+                guard case .int64(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid LastScan property")
+                }
+                return decoded
+            }
+        }
+
+    }
 }
