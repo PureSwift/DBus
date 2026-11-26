@@ -2,260 +2,262 @@
 // Interface reference: https://bluez.readthedocs.io/en/latest/device-api/
 import DBus
 
-/// Client for `org.bluez.Device1` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct BlueZDevice: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension BlueZ {
+    /// Client for `org.bluez.Device1` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct Device: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
-                                     path: path, interface: "org.bluez.Device1")
-    }
-
-    public func connect() async throws {
-        let reply = try await proxy.call("Connect", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func disconnect() async throws {
-        let reply = try await proxy.call("Disconnect", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func pair() async throws {
-        let reply = try await proxy.call("Pair", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func cancelPairing() async throws {
-        let reply = try await proxy.call("CancelPairing", arguments: [])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func connectProfile(uuid: String) async throws {
-        let reply = try await proxy.call("ConnectProfile", arguments: [.string(uuid)])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public func disconnectProfile(uuid: String) async throws {
-        let reply = try await proxy.call("DisconnectProfile", arguments: [.string(uuid)])
-        try DBusServiceProxy.validate(reply, signature: "")
-    }
-
-    public var address: String {
-        get async throws {
-            let value = try await proxy.property("Address")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Address property")
-            }
-            return decoded
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.bluez",
+                                         path: path, interface: "org.bluez.Device1")
         }
-    }
 
-    public var addressType: String {
-        get async throws {
-            let value = try await proxy.property("AddressType")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid AddressType property")
-            }
-            return decoded
+        public func connect() async throws {
+            let reply = try await proxy.call("Connect", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public var name: String {
-        get async throws {
-            let value = try await proxy.property("Name")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Name property")
-            }
-            return decoded
+        public func disconnect() async throws {
+            let reply = try await proxy.call("Disconnect", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public var alias: String {
-        get async throws {
-            let value = try await proxy.property("Alias")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Alias property")
-            }
-            return decoded
+        public func pair() async throws {
+            let reply = try await proxy.call("Pair", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public func setAlias(_ value: String) async throws {
-        try DBusServiceProxy.validate([.string(value)], signature: "s")
-        try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
-                                               interface: proxy.interface, name: "Alias", value: .string(value))
-    }
-
-    public var `class`: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Class")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Class property")
-            }
-            return decoded
+        public func cancelPairing() async throws {
+            let reply = try await proxy.call("CancelPairing", arguments: [])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public var appearance: UInt16 {
-        get async throws {
-            let value = try await proxy.property("Appearance")
-            try DBusServiceProxy.validate([value], signature: "q")
-            guard case .uint16(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Appearance property")
-            }
-            return decoded
+        public func connectProfile(uuid: String) async throws {
+            let reply = try await proxy.call("ConnectProfile", arguments: [.string(uuid)])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public var icon: String {
-        get async throws {
-            let value = try await proxy.property("Icon")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Icon property")
-            }
-            return decoded
+        public func disconnectProfile(uuid: String) async throws {
+            let reply = try await proxy.call("DisconnectProfile", arguments: [.string(uuid)])
+            try DBusServiceProxy.validate(reply, signature: "")
         }
-    }
 
-    public var paired: Bool {
-        get async throws {
-            let value = try await proxy.property("Paired")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Paired property")
+        public var address: String {
+            get async throws {
+                let value = try await proxy.property("Address")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Address property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var trusted: Bool {
-        get async throws {
-            let value = try await proxy.property("Trusted")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Trusted property")
+        public var addressType: String {
+            get async throws {
+                let value = try await proxy.property("AddressType")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid AddressType property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public func setTrusted(_ value: Bool) async throws {
-        try DBusServiceProxy.validate([.boolean(value)], signature: "b")
-        try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
-                                               interface: proxy.interface, name: "Trusted", value: .boolean(value))
-    }
-
-    public var blocked: Bool {
-        get async throws {
-            let value = try await proxy.property("Blocked")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Blocked property")
+        public var name: String {
+            get async throws {
+                let value = try await proxy.property("Name")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Name property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public func setBlocked(_ value: Bool) async throws {
-        try DBusServiceProxy.validate([.boolean(value)], signature: "b")
-        try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
-                                               interface: proxy.interface, name: "Blocked", value: .boolean(value))
-    }
-
-    public var connected: Bool {
-        get async throws {
-            let value = try await proxy.property("Connected")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Connected property")
+        public var alias: String {
+            get async throws {
+                let value = try await proxy.property("Alias")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Alias property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var adapter: DBusObjectPath {
-        get async throws {
-            let value = try await proxy.property("Adapter")
-            try DBusServiceProxy.validate([value], signature: "o")
-            guard case .objectPath(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Adapter property")
+        public func setAlias(_ value: String) async throws {
+            try DBusServiceProxy.validate([.string(value)], signature: "s")
+            try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
+                                                   interface: proxy.interface, name: "Alias", value: .string(value))
+        }
+
+        public var `class`: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Class")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Class property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var uuids: DBusMessageArgument.Array {
-        get async throws {
-            let value = try await proxy.property("UUIDs")
-            try DBusServiceProxy.validate([value], signature: "as")
-            guard case .array(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid UUIDs property")
+        public var appearance: UInt16 {
+            get async throws {
+                let value = try await proxy.property("Appearance")
+                try DBusServiceProxy.validate([value], signature: "q")
+                guard case .uint16(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Appearance property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var servicesResolved: Bool {
-        get async throws {
-            let value = try await proxy.property("ServicesResolved")
-            try DBusServiceProxy.validate([value], signature: "b")
-            guard case .boolean(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ServicesResolved property")
+        public var icon: String {
+            get async throws {
+                let value = try await proxy.property("Icon")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Icon property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var rssi: Int16 {
-        get async throws {
-            let value = try await proxy.property("RSSI")
-            try DBusServiceProxy.validate([value], signature: "n")
-            guard case .int16(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid RSSI property")
+        public var paired: Bool {
+            get async throws {
+                let value = try await proxy.property("Paired")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Paired property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var txPower: Int16 {
-        get async throws {
-            let value = try await proxy.property("TxPower")
-            try DBusServiceProxy.validate([value], signature: "n")
-            guard case .int16(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid TxPower property")
+        public var trusted: Bool {
+            get async throws {
+                let value = try await proxy.property("Trusted")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Trusted property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var manufacturerData: DBusMessageArgument.Dictionary {
-        get async throws {
-            let value = try await proxy.property("ManufacturerData")
-            try DBusServiceProxy.validate([value], signature: "a{qv}")
-            guard case .dictionary(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ManufacturerData property")
+        public func setTrusted(_ value: Bool) async throws {
+            try DBusServiceProxy.validate([.boolean(value)], signature: "b")
+            try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
+                                                   interface: proxy.interface, name: "Trusted", value: .boolean(value))
+        }
+
+        public var blocked: Bool {
+            get async throws {
+                let value = try await proxy.property("Blocked")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Blocked property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var serviceData: DBusMessageArgument.Dictionary {
-        get async throws {
-            let value = try await proxy.property("ServiceData")
-            try DBusServiceProxy.validate([value], signature: "a{sv}")
-            guard case .dictionary(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid ServiceData property")
+        public func setBlocked(_ value: Bool) async throws {
+            try DBusServiceProxy.validate([.boolean(value)], signature: "b")
+            try await proxy.connection.setProperty(destination: proxy.destination, path: proxy.path,
+                                                   interface: proxy.interface, name: "Blocked", value: .boolean(value))
+        }
+
+        public var connected: Bool {
+            get async throws {
+                let value = try await proxy.property("Connected")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Connected property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
+        public var adapter: DBusObjectPath {
+            get async throws {
+                let value = try await proxy.property("Adapter")
+                try DBusServiceProxy.validate([value], signature: "o")
+                guard case .objectPath(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Adapter property")
+                }
+                return decoded
+            }
+        }
+
+        public var uuids: DBusMessageArgument.Array {
+            get async throws {
+                let value = try await proxy.property("UUIDs")
+                try DBusServiceProxy.validate([value], signature: "as")
+                guard case .array(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid UUIDs property")
+                }
+                return decoded
+            }
+        }
+
+        public var servicesResolved: Bool {
+            get async throws {
+                let value = try await proxy.property("ServicesResolved")
+                try DBusServiceProxy.validate([value], signature: "b")
+                guard case .boolean(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ServicesResolved property")
+                }
+                return decoded
+            }
+        }
+
+        public var rssi: Int16 {
+            get async throws {
+                let value = try await proxy.property("RSSI")
+                try DBusServiceProxy.validate([value], signature: "n")
+                guard case .int16(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid RSSI property")
+                }
+                return decoded
+            }
+        }
+
+        public var txPower: Int16 {
+            get async throws {
+                let value = try await proxy.property("TxPower")
+                try DBusServiceProxy.validate([value], signature: "n")
+                guard case .int16(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid TxPower property")
+                }
+                return decoded
+            }
+        }
+
+        public var manufacturerData: DBusMessageArgument.Dictionary {
+            get async throws {
+                let value = try await proxy.property("ManufacturerData")
+                try DBusServiceProxy.validate([value], signature: "a{qv}")
+                guard case .dictionary(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ManufacturerData property")
+                }
+                return decoded
+            }
+        }
+
+        public var serviceData: DBusMessageArgument.Dictionary {
+            get async throws {
+                let value = try await proxy.property("ServiceData")
+                try DBusServiceProxy.validate([value], signature: "a{sv}")
+                guard case .dictionary(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid ServiceData property")
+                }
+                return decoded
+            }
+        }
+
+    }
 }
