@@ -2,124 +2,126 @@
 // Interface reference: https://networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager.AccessPoint.html
 import DBus
 
-/// Client for `org.freedesktop.NetworkManager.AccessPoint` on the system bus.
-/// The caller owns the connection; service errors propagate as DBusError.
-public struct NetworkManagerAccessPoint: DBusServiceClient {
-    public let proxy: DBusServiceProxy
+extension NetworkManager {
+    /// Client for `org.freedesktop.NetworkManager.AccessPoint` on the system bus.
+    /// The caller owns the connection; service errors propagate as DBusError.
+    public struct AccessPoint: DBusServiceClient {
+        public let proxy: DBusServiceProxy
 
-    public init(connection: DBusConnection, path: String) throws {
-        proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.NetworkManager",
-                                     path: path, interface: "org.freedesktop.NetworkManager.AccessPoint")
-    }
-
-    public var flags: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Flags")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Flags property")
-            }
-            return decoded
+        public init(connection: DBusConnection, path: String) throws {
+            proxy = try DBusServiceProxy(connection: connection, destination: "org.freedesktop.NetworkManager",
+                                         path: path, interface: "org.freedesktop.NetworkManager.AccessPoint")
         }
-    }
 
-    public var wpaFlags: UInt32 {
-        get async throws {
-            let value = try await proxy.property("WpaFlags")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid WpaFlags property")
+        public var flags: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Flags")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Flags property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var rsnFlags: UInt32 {
-        get async throws {
-            let value = try await proxy.property("RsnFlags")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid RsnFlags property")
+        public var wpaFlags: UInt32 {
+            get async throws {
+                let value = try await proxy.property("WpaFlags")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid WpaFlags property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var ssid: DBusMessageArgument.Array {
-        get async throws {
-            let value = try await proxy.property("Ssid")
-            try DBusServiceProxy.validate([value], signature: "ay")
-            guard case .array(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Ssid property")
+        public var rsnFlags: UInt32 {
+            get async throws {
+                let value = try await proxy.property("RsnFlags")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid RsnFlags property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var frequency: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Frequency")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Frequency property")
+        public var ssid: DBusMessageArgument.Array {
+            get async throws {
+                let value = try await proxy.property("Ssid")
+                try DBusServiceProxy.validate([value], signature: "ay")
+                guard case .array(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Ssid property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var hwAddress: String {
-        get async throws {
-            let value = try await proxy.property("HwAddress")
-            try DBusServiceProxy.validate([value], signature: "s")
-            guard case .string(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid HwAddress property")
+        public var frequency: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Frequency")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Frequency property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var mode: UInt32 {
-        get async throws {
-            let value = try await proxy.property("Mode")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Mode property")
+        public var hwAddress: String {
+            get async throws {
+                let value = try await proxy.property("HwAddress")
+                try DBusServiceProxy.validate([value], signature: "s")
+                guard case .string(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid HwAddress property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var maxBitrate: UInt32 {
-        get async throws {
-            let value = try await proxy.property("MaxBitrate")
-            try DBusServiceProxy.validate([value], signature: "u")
-            guard case .uint32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid MaxBitrate property")
+        public var mode: UInt32 {
+            get async throws {
+                let value = try await proxy.property("Mode")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Mode property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var strength: UInt8 {
-        get async throws {
-            let value = try await proxy.property("Strength")
-            try DBusServiceProxy.validate([value], signature: "y")
-            guard case .byte(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid Strength property")
+        public var maxBitrate: UInt32 {
+            get async throws {
+                let value = try await proxy.property("MaxBitrate")
+                try DBusServiceProxy.validate([value], signature: "u")
+                guard case .uint32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid MaxBitrate property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
-    public var lastSeen: Int32 {
-        get async throws {
-            let value = try await proxy.property("LastSeen")
-            try DBusServiceProxy.validate([value], signature: "i")
-            guard case .int32(let decoded) = value else {
-                throw DBusProtocolError.invalidValue("Invalid LastSeen property")
+        public var strength: UInt8 {
+            get async throws {
+                let value = try await proxy.property("Strength")
+                try DBusServiceProxy.validate([value], signature: "y")
+                guard case .byte(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid Strength property")
+                }
+                return decoded
             }
-            return decoded
         }
-    }
 
+        public var lastSeen: Int32 {
+            get async throws {
+                let value = try await proxy.property("LastSeen")
+                try DBusServiceProxy.validate([value], signature: "i")
+                guard case .int32(let decoded) = value else {
+                    throw DBusProtocolError.invalidValue("Invalid LastSeen property")
+                }
+                return decoded
+            }
+        }
+
+    }
 }
