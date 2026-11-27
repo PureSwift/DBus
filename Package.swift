@@ -41,13 +41,16 @@ let package = Package(
 )
 
 // Standard service clients are separate products so consumers choose their domains.
-for service in ["BlueZ", "NetworkManager", "UPower", "Login1", "ScreenSaver"] {
+let services = ["BlueZ", "NetworkManager", "UPower", "Login1", "ScreenSaver",
+                "Avahi", "SecretService", "DesktopNotifications", "StatusNotifier",
+                "FreedesktopPortal", "MPRIS", "Polkit", "UDisks2"]
+for service in services {
     package.products.append(.library(name: service, type: libraryType, targets: [service]))
     package.targets.append(.target(name: service, dependencies: ["DBus"]))
 }
 package.targets.append(.testTarget(
     name: "ServiceTests",
-    dependencies: ["DBus", "BlueZ", "NetworkManager", "UPower", "Login1", "ScreenSaver"]
+    dependencies: [.byName(name: "DBus")] + services.map { .byName(name: $0) }
 ))
 
 // The libdbus-1 C ABI, built only when `SWIFTPM_DBUS_CABI=1`.
