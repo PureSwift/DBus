@@ -3,7 +3,6 @@
 //  DBusTests
 //
 
-import Foundation
 #if canImport(Glibc)
 import Glibc
 #elseif canImport(Musl)
