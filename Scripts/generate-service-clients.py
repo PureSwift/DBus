@@ -17,6 +17,8 @@ TYPES = {
     't': ('UInt64', 'uint64'), 'x': ('Int64', 'int64'),
     'd': ('Double', 'double'), 'o': ('DBusObjectPath', 'objectPath'),
     'h': ('DBusMessageArgument.FileDescriptor', 'fileDescriptor'),
+    'v': ('DBusMessageArgument.Variant', 'variant'),
+    'g': ('DBusSignature', 'signature'),
 }
 
 
@@ -40,7 +42,7 @@ def lower(name):
 
 def generate(target, name, service, interface, path, methods, properties, source, bus='system', swift_name=None):
     # The Swift type may be nested while the output filename remains stable.
-    if swift_name is None and interface.startswith(service + '.'):
+    if swift_name is None and service and interface.startswith(service + '.'):
         components = interface[len(service) + 1:].split('.')
         swift_name = '.'.join([target] + [re.sub(r'\d+$', '', component) for component in components])
     namespace, _, type_name = (swift_name or name).rpartition('.')
@@ -51,8 +53,10 @@ def generate(target, name, service, interface, path, methods, properties, source
              f'public struct {type_name}: DBusServiceClient {{',
              '    public let proxy: DBusServiceProxy', '']
     default = f' = "{path}"' if path else ''
-    lines += [f'    public init(connection: DBusConnection, path: String{default}) throws {{',
-              f'        proxy = try DBusServiceProxy(connection: connection, destination: "{service}",',
+    destination_parameter = ', destination: String' if service is None else ''
+    destination_value = 'destination' if service is None else f'"{service}"'
+    lines += [f'    public init(connection: DBusConnection{destination_parameter}, path: String{default}) throws {{',
+              f'        proxy = try DBusServiceProxy(connection: connection, destination: {destination_value},',
               f'                                     path: path, interface: "{interface}")', '    }', '']
     for method, args, result in methods:
         args = [(label, sig) for label, sig in args]
@@ -66,7 +70,7 @@ def generate(target, name, service, interface, path, methods, properties, source
         elif results:
             ret = ' -> (' + ', '.join(f'{label}: {value_type(sig)[0]}' for label, sig in results) + ')'
         if result == 'h':
-            lines += ['    /// The caller owns the returned descriptor. Close it to release the inhibitor.']
+            lines += ['    /// The caller owns the returned descriptor and must close it when finished.']
         lines += [f'    public func {lower(method)}({params}) async throws{ret} {{']
         if any(sig.startswith(('a', '(')) for _, sig in args):
             input_signature = ''.join(sig for _, sig in args)
