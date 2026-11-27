@@ -4,7 +4,12 @@
 //
 
 import Socket
+#if canImport(System)
+import struct System.FileDescriptor
+import struct System.FilePath
+#else
 import SystemPackage
+#endif
 
 #if canImport(Glibc)
 import Glibc

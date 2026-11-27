@@ -5,7 +5,6 @@
 //  Created by Alsey Coleman Miller on 10/21/18.
 //
 
-import Foundation
 import Testing
 @testable import DBus
 

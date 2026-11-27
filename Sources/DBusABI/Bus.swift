@@ -5,7 +5,6 @@
 //  `dbus_bus_*` — the operations the message bus itself provides.
 //
 
-import Foundation
 import CDBusABI
 import DBus
 

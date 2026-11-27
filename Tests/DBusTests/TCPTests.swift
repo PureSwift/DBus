@@ -3,7 +3,11 @@
 //  DBusTests
 //
 
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#else
 import Foundation
+#endif
 #if canImport(Glibc)
 import Glibc
 #elseif canImport(Musl)
@@ -58,6 +62,7 @@ import Testing
         #expect(endpoints[0].description == "[::1]:5678")
     }
 
+    #if os(Linux)
     @Test func familyRestrictsResolution() throws {
 
         // Asking for the wrong family for a numeric address yields nothing.
@@ -65,6 +70,7 @@ import Testing
             try DBusTCPEndpoint.resolve(host: "127.0.0.1", port: 1, family: .ipv6)
         }
     }
+    #endif
 
     @Test func rejectsUnresolvableHost() {
 

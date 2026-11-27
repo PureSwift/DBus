@@ -1,6 +1,10 @@
 // swift-tools-version:6.4
 import PackageDescription
+#if canImport(FoundationEssentials)
+import class FoundationEssentials.ProcessInfo
+#else
 import class Foundation.ProcessInfo
+#endif
 
 // force building as dynamic library
 let dynamicLibrary = ProcessInfo.processInfo.environment["SWIFT_BUILD_DYNAMIC_LIBRARY"] != nil
