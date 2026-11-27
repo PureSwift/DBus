@@ -6,7 +6,11 @@
 //  Copyright © 2016 PureSwift. All rights reserved.
 //
 
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#else
 import Foundation
+#endif
 import Socket
 
 /// A connection to a D-Bus peer, usually a message bus daemon.
