@@ -11,7 +11,15 @@
 //  from the same C allocator these use.
 //
 
-import Foundation
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Bionic)
+import Bionic
+#endif
 import CDBusABI
 
 /// `void *dbus_malloc(size_t bytes)`
