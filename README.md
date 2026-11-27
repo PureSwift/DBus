@@ -19,7 +19,9 @@ SwiftPM requires Socket 0.7.0 or a compatible release before 1.0.0.
 
 Add `https://github.com/PureSwift/DBus.git` as a package dependency. Select the
 `DBus` product for the core API and any service products your application uses:
-`BlueZ`, `NetworkManager`, `UPower`, `Login1`, or `ScreenSaver`. Each service has
+`BlueZ`, `NetworkManager`, `UPower`, `Login1`, `ScreenSaver`, `Avahi`,
+`SecretService`, `DesktopNotifications`, `StatusNotifier`, `FreedesktopPortal`,
+`MPRIS`, `Polkit`, or `UDisks2`. Each service has
 its own target and depends on `DBus`.
 
 For example, a target using Bluetooth clients can declare:
@@ -164,13 +166,21 @@ Each service is a separate SwiftPM library product and import:
 
 | Product | Coverage | Bus |
 | --- | --- | --- |
-| `BlueZ` | ObjectManager, adapter, device, GATT service/characteristic/descriptor and registration clients | System |
+| `BlueZ` | ObjectManager, adapter, device, GATT service/characteristic/descriptor, agent and registration clients | System |
 | `NetworkManager` | Manager, device, wireless, access-point and connection-settings clients | System |
 | `UPower` | Manager and device methods, battery properties and signals | System |
 | `Login1` | Manager/session clients, power operations and inhibitors | System |
 | `ScreenSaver` | Idle inhibition and KDE-compatible screen saver controls | Session |
+| `Avahi` | Server/Server2, entry groups, service browsers and resolvers | System |
+| `SecretService` | Service, collections, items, sessions and prompts | Session |
+| `DesktopNotifications` | Notifications, capabilities and server information | Session |
+| `StatusNotifier` | Watcher, item and DBusMenu clients | Session |
+| `FreedesktopPortal` | FileChooser, OpenURI, Settings, ScreenCast, request and session clients | Session |
+| `MPRIS` | Media player identity, playback, metadata and writable controls | Session |
+| `Polkit` | Authority authorization checks and authentication agent registration | System |
+| `UDisks2` | ObjectManager, manager, drives, blocks, filesystems, partitions, encryption, loops, swap and jobs | System |
 
-All five products are generated from checked-in interface definitions and use
+All thirteen products are generated from checked-in interface definitions and use
 caller-owned connections. BlueZ's `getManagedObjects()` returns a snapshot; consumers maintain
 their own cache using `signals()` and per-object `propertyChanges()` streams.
 NetworkManager scans use `requestScan(options:)` and `LastScan` property changes
@@ -190,7 +200,24 @@ interface version suffixes are omitted from child type names:
 
 `BlueZ` itself provides the ObjectManager client. `NetworkManager`, `UPower`, and
 `ScreenSaver` provide their root clients; `Login1` is a namespace for its clients.
-Generated filenames remain stable.
+Generated filenames remain stable. Avahi exposes both `Avahi.Server` and
+`Avahi.Server2` because the latter uses prepare/start operations for browsing.
+Subscribe to a prepared browser's signals before calling `start()`.
+
+`MPRIS` and `MPRIS.Player` require a `destination:` bus name, such as
+`org.mpris.MediaPlayer2.vlc`. `StatusNotifier.Item`, `StatusNotifier.Menu` and
+`BlueZ.Agent` likewise require the destination of the application exporting them.
+Agent, notifier item and menu exports remain application responsibilities.
+
+Portal methods return request paths; use `FreedesktopPortal.Request` and its
+`signals()` stream to handle `Response`, and keep session objects alive until
+finished. Subscribe before starting an operation (using a predictable handle token
+and `connection.signals(matching:)` when needed) to avoid missing an early response.
+Secret Service clients expose the wire protocol: callers choose and implement
+session encryption, handle returned prompt paths, and close sessions explicitly.
+Notification action/closure events and other service signals are available through
+`signals()` as `DBusMessage` values. KDE-specific notification inhibition methods
+may be unavailable on other notification servers.
 
 The generated clients accept a caller-owned connection:
 
@@ -242,7 +269,7 @@ python3 Scripts/generate-service-clients.py
 ```
 
 [Scripts/generate-service-clients.py](Scripts/generate-service-clients.py) contains
-the Swift generation logic. It writes all five service products; do not edit the
+the Swift generation logic. It writes all thirteen service products; do not edit the
 generated Swift files manually. Upstream interface references are linked in the
 API definitions and generated files.
 

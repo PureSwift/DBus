@@ -96,7 +96,7 @@ extension Login1 {
             return value
         }
 
-        /// The caller owns the returned descriptor. Close it to release the inhibitor.
+        /// The caller owns the returned descriptor and must close it when finished.
         public func inhibit(what: String, who: String, why: String, mode: String) async throws -> DBusMessageArgument.FileDescriptor {
             let reply = try await proxy.call("Inhibit", arguments: [.string(what), .string(who), .string(why), .string(mode)])
             try DBusServiceProxy.validate(reply, signature: "h")
