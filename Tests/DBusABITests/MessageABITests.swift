@@ -9,7 +9,15 @@
 //
 
 import Testing
-import Foundation
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Bionic)
+import Bionic
+#endif
 import CDBusABI
 @testable import DBusABI
 
