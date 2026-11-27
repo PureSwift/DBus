@@ -12,7 +12,16 @@
 //  (`DBusConnection`, `DBusMessage`) arrive in Swift as `OpaquePointer`.
 //
 
-import Foundation
+import Dispatch
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Bionic)
+import Bionic
+#endif
 import CDBusABI
 import DBus
 
