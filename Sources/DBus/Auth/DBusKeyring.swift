@@ -3,7 +3,11 @@
 //  DBus
 //
 
+#if canImport(System)
+import System
+#else
 import SystemPackage
+#endif
 
 /// The shared secrets used by `DBUS_COOKIE_SHA1`.
 ///
