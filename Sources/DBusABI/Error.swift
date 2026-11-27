@@ -5,7 +5,15 @@
 //  `dbus_error_*` — the C ABI's out-parameter error type.
 //
 
-import Foundation
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Bionic)
+import Bionic
+#endif
 import CDBusABI
 import DBus
 
