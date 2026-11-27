@@ -5,7 +5,15 @@
 //  `dbus_message_*` — construction, reference counting and header accessors.
 //
 
-import Foundation
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#elseif canImport(Bionic)
+import Bionic
+#endif
 import CDBusABI
 import DBus
 
