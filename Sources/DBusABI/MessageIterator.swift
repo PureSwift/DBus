@@ -11,7 +11,6 @@
 //  reference's rule that an iterator is valid only while its message is.
 //
 
-import Foundation
 import CDBusABI
 import DBus
 
